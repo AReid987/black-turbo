@@ -1,0 +1,39 @@
+# Fly.io deployment configuration for Shadowbroker backend
+# Update app name and internal_port to match your backend implementation
+
+app = 'shadowbroker-backend'
+primary_region = 'iad'
+
+[build]
+  # Uncomment and adjust based on your backend stack:
+  # builder = 'docker'
+  # dockerfile = 'Dockerfile'
+  # OR for Node.js:
+  # builder = 'heroku/buildpacks:20'
+  # OR for Python:
+  # builder = 'paketobuildpacks/builder-jammy-base'
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ['app']
+
+[env]
+  NODE_ENV = 'production'
+  # Add backend-specific env vars here or set them via:
+  # fly secrets set KEY=value
+
+[[vm]]
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 256
+  # 256MB shared CPU = ~$1.94/mo (well within Fly.io free tier ~$5/mo credit)
+
+# Optional: Add a Postgres database
+# [[postgres]]
+#   app_name = 'shadowbroker-backend-db'
+#   db_name = 'shadowbroker'
+#   db_user = 'shadowbroker'
