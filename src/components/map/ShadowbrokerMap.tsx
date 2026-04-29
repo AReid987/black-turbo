@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { cctvCameras, type CctvCamera } from '@/lib/data/cctv';
+import { getAllCameras, cctvCameras, type CctvCamera } from '@/lib/data/cctv';
 import { fetchEarthquakes, getMagnitudeColor, getMagnitudeSize, type EarthquakeFeature } from '@/lib/data/earthquakes';
 import { fetchMilitaryAircraft, type Aircraft } from '@/lib/data/aircraft';
 import { fetchAirQuality, getAqiColor, getAqiLabel, type AirQualityStation } from '@/lib/data/airquality';
@@ -113,6 +113,7 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   const [earthquakes, setEarthquakes] = useState<EarthquakeFeature[]>([]);
   const [aircraft, setAircraft] = useState<Aircraft[]>([]);
   const [airQuality, setAirQuality] = useState<AirQualityStation[]>([]);
+  const [cctvList, setCctvList] = useState<CctvCamera[]>(cctvCameras);
 
   // Initialize map
   useEffect(() => {
@@ -221,6 +222,18 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     return () => clearInterval(interval);
   }, [activeLayers]);
 
+  // Fetch CCTV cameras dynamically
+  useEffect(() => {
+    if (!activeLayers['cctv']) return;
+    const load = async () => {
+      const data = await getAllCameras();
+      setCctvList(data);
+    };
+    load();
+    const interval = setInterval(load, 300000);
+    return () => clearInterval(interval);
+  }, [activeLayers]);
+
   // --- MARKER UPDATERS ---
 
   const updateCctvMarkers = useCallback(() => {
@@ -229,7 +242,7 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     cctvMarkersRef.current = [];
     if (!activeLayers['cctv']) return;
 
-    cctvCameras.forEach((cam) => {
+    cctvList.forEach((cam) => {
       const el = document.createElement('div');
       el.innerHTML = `<div style="width:14px;height:14px;background:#22c55e;border:2px solid #000;border-radius:50%;box-shadow:0 0 8px #22c55e;cursor:pointer;transition:transform 0.2s;"></div>`;
       el.style.cursor = 'pointer';
@@ -249,7 +262,7 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
 
       cctvMarkersRef.current.push(marker);
     });
-  }, [activeLayers, onCameraSelect]);
+  }, [activeLayers, cctvList, onCameraSelect]);
 
   const updateEqMarkers = useCallback(() => {
     if (!map.current) return;
@@ -392,7 +405,7 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   }, [activeLayers, airQuality]);
 
   // Apply all marker updates
-  useEffect(() => { if (mapLoaded) updateCctvMarkers(); }, [mapLoaded, activeLayers, updateCctvMarkers]);
+  useEffect(() => { if (mapLoaded) updateCctvMarkers(); }, [mapLoaded, activeLayers, cctvList, updateCctvMarkers]);
   useEffect(() => { if (mapLoaded) updateEqMarkers(); }, [mapLoaded, activeLayers, earthquakes, updateEqMarkers]);
   useEffect(() => { if (mapLoaded) updateAircraftMarkers(); }, [mapLoaded, activeLayers, aircraft, updateAircraftMarkers]);
   useEffect(() => { if (mapLoaded) updateVolcanoMarkers(); }, [mapLoaded, activeLayers, updateVolcanoMarkers]);

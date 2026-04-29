@@ -9,24 +9,19 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Missing url parameter' }, { status: 400 });
   }
 
-  // Security: only allow known camera domains
-  const allowedDomains = [
-    'jamcams.tfl.gov.uk',
-    'images.wsdot.wa.gov',
-    'www.nvroads.com',
-    'udottraffic.utah.gov',
-    'webcams.nyctmc.org',
-    'its.txdot.gov',
-    'www.dgt.es',
-    'www.road.is',
-    'www.vegvesen.no',
-    'weathercam.digitraffic.fi',
-    'www.astra.admin.ch',
-  ];
-
   try {
     const urlObj = new URL(url);
-    if (!allowedDomains.some(domain => urlObj.hostname.endsWith(domain))) {
+    const hostname = urlObj.hostname;
+    const pathname = urlObj.pathname;
+
+    // Security: only allow known camera domains
+    // For S3, we check the path contains the expected bucket prefix
+    const isAllowed = (
+      hostname === 'weathercam.digitraffic.fi' ||
+      (hostname === 's3-eu-west-1.amazonaws.com' && pathname.includes('/jamcams.tfl.gov.uk/'))
+    );
+
+    if (!isAllowed) {
       return NextResponse.json({ error: 'Domain not allowed' }, { status: 403 });
     }
 
