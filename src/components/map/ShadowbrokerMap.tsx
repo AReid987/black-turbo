@@ -18,6 +18,8 @@ import { satellites, getSatelliteColor, type Satellite } from '@/lib/data/satell
 import { fetchCommercialFlights, type CommercialFlight } from '@/lib/data/commercialFlights';
 import { trains, getTrainColor, type Train } from '@/lib/data/trains';
 import { gpsJammingZones, getJammingColor, type GpsJammingZone } from '@/lib/data/gpsJamming';
+import { internetOutages, getOutageColor, type InternetOutage } from '@/lib/data/outages';
+import { radioStations, getRadioColor, type RadioStation } from '@/lib/data/radios';
 import { CctvViewer } from '@/components/panels/CctvViewer';
 import DossierPanel from '@/components/panels/DossierPanel';
 
@@ -125,6 +127,8 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   const commercialFlightMarkersRef = useRef<maplibregl.Marker[]>([]);
   const trainMarkersRef = useRef<maplibregl.Marker[]>([]);
   const jammingMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const outageMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const radioMarkersRef = useRef<maplibregl.Marker[]>([]);
   const [selectedCamera, setSelectedCamera] = useState<CctvCamera | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [dossierPos, setDossierPos] = useState<{ lat: number; lng: number } | null>(null);
@@ -141,6 +145,8 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   const [commercialFlights, setCommercialFlights] = useState<CommercialFlight[]>([]);
   const [trainList] = useState<Train[]>(trains);
   const [jammingZones] = useState<GpsJammingZone[]>(gpsJammingZones);
+  const [outageList] = useState<InternetOutage[]>(internetOutages);
+  const [radioList] = useState<RadioStation[]>(radioStations);
 
   // Initialize map
   useEffect(() => {
@@ -704,6 +710,57 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     });
   }, [activeLayers, jammingZones]);
 
+  const updateOutageMarkers = useCallback(() => {
+    if (!map.current) return;
+    outageMarkersRef.current.forEach(m => m.remove());
+    outageMarkersRef.current = [];
+    if (!activeLayers['outages']) return;
+
+    outageList.forEach((o) => {
+      const color = getOutageColor(o.severity);
+      const el = document.createElement('div');
+      // Broken connection icon style
+      el.innerHTML = `<div style="width:10px;height:10px;background:${color};border:1.5px solid #000;border-radius:50%;box-shadow:0 0 5px ${color};cursor:pointer;position:relative;">
+        <div style="position:absolute;top:50%;left:-2px;width:14px;height:2px;background:${color};transform:translateY(-50%) rotate(45deg);"></div>
+      </div>`;
+      el.style.cursor = 'pointer';
+
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([o.lng, o.lat]).addTo(map.current!);
+      const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 })
+        .setHTML(`<div style="font-family:monospace;font-size:11px;color:${color};background:#000;padding:4px 8px;border:1px solid ${color};max-width:220px;"><strong>INTERNET OUTAGE</strong><br/><span style="color:#888">${o.region}, ${o.country}<br/>${o.affected}<br/>Cause: ${o.cause}<br/>Severity: ${o.severity.toUpperCase()}<br/>Since: ${o.since}</span></div>`);
+      el.addEventListener('mouseenter', () => popup.setLngLat([o.lng, o.lat]).addTo(map.current!));
+      el.addEventListener('mouseleave', () => popup.remove());
+
+      outageMarkersRef.current.push(marker);
+    });
+  }, [activeLayers, outageList]);
+
+  const updateRadioMarkers = useCallback(() => {
+    if (!map.current) return;
+    radioMarkersRef.current.forEach(m => m.remove());
+    radioMarkersRef.current = [];
+    if (!activeLayers['radios']) return;
+
+    radioList.forEach((r) => {
+      const color = getRadioColor(r.type, r.status);
+      const el = document.createElement('div');
+      // Antenna shape
+      el.innerHTML = `<div style="width:6px;height:6px;background:${color};border:1.5px solid #000;border-radius:50%;box-shadow:0 0 4px ${color};cursor:pointer;position:relative;">
+        <div style="position:absolute;bottom:100%;left:50%;width:1px;height:6px;background:${color};transform:translateX(-50%);"></div>
+        <div style="position:absolute;bottom:calc(100% + 4px);left:50%;width:8px;height:1px;background:${color};transform:translateX(-50%);"></div>
+      </div>`;
+      el.style.cursor = 'pointer';
+
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([r.lng, r.lat]).addTo(map.current!);
+      const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 })
+        .setHTML(`<div style="font-family:monospace;font-size:10px;color:${color};background:#000;padding:4px 8px;border:1px solid ${color};max-width:200px;"><strong>${r.name}</strong><br/><span style="color:#888">${r.type}<br/>${r.frequency}<br/>Status: ${r.status.toUpperCase()}<br/>${r.operator || ''}</span></div>`);
+      el.addEventListener('mouseenter', () => popup.setLngLat([r.lng, r.lat]).addTo(map.current!));
+      el.addEventListener('mouseleave', () => popup.remove());
+
+      radioMarkersRef.current.push(marker);
+    });
+  }, [activeLayers, radioList]);
+
   // Apply all marker updates
   useEffect(() => { if (mapLoaded) updateCctvMarkers(); }, [mapLoaded, activeLayers, cctvList, updateCctvMarkers]);
   useEffect(() => { if (mapLoaded) updateEqMarkers(); }, [mapLoaded, activeLayers, earthquakes, updateEqMarkers]);
@@ -720,6 +777,8 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   useEffect(() => { if (mapLoaded) updateCommercialFlightMarkers(); }, [mapLoaded, activeLayers, commercialFlights, updateCommercialFlightMarkers]);
   useEffect(() => { if (mapLoaded) updateTrainMarkers(); }, [mapLoaded, activeLayers, trainList, updateTrainMarkers]);
   useEffect(() => { if (mapLoaded) updateJammingMarkers(); }, [mapLoaded, activeLayers, jammingZones, updateJammingMarkers]);
+  useEffect(() => { if (mapLoaded) updateOutageMarkers(); }, [mapLoaded, activeLayers, outageList, updateOutageMarkers]);
+  useEffect(() => { if (mapLoaded) updateRadioMarkers(); }, [mapLoaded, activeLayers, radioList, updateRadioMarkers]);
 
   const filterStyle = getModeFilter(visualMode);
 
