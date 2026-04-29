@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { AlertCircle, RefreshCw, LogOut, Layers, Eye, EyeOff } from 'lucide-react'
+import { AlertCircle, RefreshCw, LogOut, Layers, Eye, EyeOff, RotateCcw } from 'lucide-react'
 import SearchBar from '@/components/panels/SearchBar'
 import KeyboardShortcuts from '@/components/panels/KeyboardShortcuts'
 import dynamic from 'next/dynamic'
@@ -30,6 +30,7 @@ export default function DashboardPage() {
   const [activeCamera, setActiveCamera] = useState<CctvCamera | null>(null)
   const [health, setHealth] = useState<HealthMap>({})
   const [stats, setStats] = useState<LayerStats>({})
+  const [refreshKey, setRefreshKey] = useState(0)
   const { toasts, addToast, dismissToast } = useToasts()
 
   // Initialize layer states
@@ -153,6 +154,14 @@ export default function DashboardPage() {
           />
           <VisualModeSelector currentMode={visualMode} onChange={setVisualMode} />
           <button
+            onClick={() => setRefreshKey(k => k + 1)}
+            className="flex items-center space-x-1 px-2 py-1.5 text-[10px] font-mono text-gray-400 hover:text-green-400 transition-colors border border-gray-800 hover:border-green-500/30 rounded"
+            title="Force refresh all data"
+          >
+            <RotateCcw className="w-3 h-3" />
+            <span className="hidden sm:inline">Refresh</span>
+          </button>
+          <button
             onClick={() => setPanelOpen(!panelOpen)}
             className="flex items-center space-x-1 px-2 py-1.5 text-[10px] font-mono text-gray-400 hover:text-green-400 transition-colors border border-gray-800 hover:border-green-500/30 rounded"
           >
@@ -187,6 +196,7 @@ export default function DashboardPage() {
             onToast={addToast}
             onHealthChange={setHealth}
             onStatsChange={setStats}
+            refreshSignal={refreshKey}
           />
 
           <ToastContainer toasts={toasts} onDismiss={dismissToast} />

@@ -53,6 +53,7 @@ interface ShadowbrokerMapProps {
   onToast?: (toast: { type: ToastType; title: string; message?: string; duration?: number }) => void;
   onHealthChange?: (health: HealthMap) => void;
   onStatsChange?: (stats: LayerStats) => void;
+  refreshSignal?: number;
 }
 
 const getSatelliteStyle = (): maplibregl.StyleSpecification => ({
@@ -133,7 +134,7 @@ function createTerminatorGeoJSON(): GeoJSON.Feature<GeoJSON.Polygon> {
   };
 }
 
-export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSelect, onToast, onHealthChange, onStatsChange }: ShadowbrokerMapProps) {
+export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSelect, onToast, onHealthChange, onStatsChange, refreshSignal }: ShadowbrokerMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const cctvMarkersRef = useRef<maplibregl.Marker[]>([]);
@@ -333,7 +334,7 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     load();
     const interval = setInterval(load, 60000);
     return () => clearInterval(interval);
-  }, [activeLayers, smartToast, updateHealth, resetLayer]);
+  }, [activeLayers, smartToast, updateHealth, resetLayer, refreshSignal]);
 
   // Fetch military aircraft
   useEffect(() => {
@@ -356,7 +357,7 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     load();
     const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
-  }, [activeLayers, smartToast, updateHealth, resetLayer]);
+  }, [activeLayers, smartToast, updateHealth, resetLayer, refreshSignal]);
 
   // Fetch air quality
   useEffect(() => {
@@ -373,7 +374,7 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     load();
     const interval = setInterval(load, 300000);
     return () => clearInterval(interval);
-  }, [activeLayers, updateHealth]);
+  }, [activeLayers, updateHealth, refreshSignal]);
 
   // Fetch CCTV cameras dynamically
   useEffect(() => {
@@ -390,7 +391,7 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     load();
     const interval = setInterval(load, 300000);
     return () => clearInterval(interval);
-  }, [activeLayers, updateHealth]);
+  }, [activeLayers, updateHealth, refreshSignal]);
 
   // Fetch Shodan hosts
   useEffect(() => {
@@ -405,7 +406,7 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
       }
     };
     load();
-  }, [activeLayers, updateHealth]);
+  }, [activeLayers, updateHealth, refreshSignal]);
 
   // Fetch vessels
   useEffect(() => {
@@ -428,7 +429,7 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     load();
     const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
-  }, [activeLayers, smartToast, updateHealth, resetLayer]);
+  }, [activeLayers, smartToast, updateHealth, resetLayer, refreshSignal]);
 
   // Fetch weather alerts
   useEffect(() => {
@@ -445,7 +446,7 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     load();
     const interval = setInterval(load, 300000);
     return () => clearInterval(interval);
-  }, [activeLayers, updateHealth]);
+  }, [activeLayers, updateHealth, refreshSignal]);
 
   // Fetch fire hotspots
   useEffect(() => {
@@ -462,7 +463,7 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     load();
     const interval = setInterval(load, 300000);
     return () => clearInterval(interval);
-  }, [activeLayers, updateHealth]);
+  }, [activeLayers, updateHealth, refreshSignal]);
 
   // Fetch commercial flights
   useEffect(() => {
@@ -485,7 +486,7 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     load();
     const interval = setInterval(load, 60000);
     return () => clearInterval(interval);
-  }, [activeLayers, smartToast, updateHealth, resetLayer]);
+  }, [activeLayers, smartToast, updateHealth, resetLayer, refreshSignal]);
 
   // --- MARKER UPDATERS ---
 
