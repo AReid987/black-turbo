@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { AlertCircle, RefreshCw, LogOut, Layers, Eye, EyeOff } from 'lucide-react'
 import SearchBar from '@/components/panels/SearchBar'
+import KeyboardShortcuts from '@/components/panels/KeyboardShortcuts'
 import dynamic from 'next/dynamic'
 import LayerPanel, { layers as layerConfigs } from '@/components/panels/LayerPanel'
 import VisualModeSelector from '@/components/panels/VisualModeSelector'
@@ -119,10 +120,14 @@ export default function DashboardPage() {
 
         <div className="flex items-center space-x-3">
           <SearchBar onSelect={(lat, lng, name) => {
-            // Fly to location — we'll need to expose a ref or method on the map
-            // For now, use a global event or window property
             (window as any).__shadowbrokerFlyTo?.({ lat, lng, name });
           }} />
+          <KeyboardShortcuts
+            layerIds={layerConfigs.map(l => l.id)}
+            onToggleLayer={toggleLayer}
+            onSetMode={setVisualMode}
+            onCloseCamera={() => setActiveCamera(null)}
+          />
           <VisualModeSelector currentMode={visualMode} onChange={setVisualMode} />
           <button
             onClick={() => setPanelOpen(!panelOpen)}
