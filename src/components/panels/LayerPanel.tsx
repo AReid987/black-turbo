@@ -21,7 +21,10 @@ import {
   Factory,
   Server,
   Wind,
+  Search,
+  X,
 } from 'lucide-react';
+import { useState } from 'react';
 import type { HealthMap } from '@/components/map/ShadowbrokerMap';
 
 export interface LayerConfig {
@@ -92,7 +95,12 @@ const healthDot = (status?: string) => {
 };
 
 export default function LayerPanel({ activeLayers, onToggle, health }: LayerPanelProps) {
+  const [filter, setFilter] = useState('');
   const categories = [...new Set(layers.map(l => l.category))];
+
+  const filteredLayers = filter.trim()
+    ? layers.filter(l => l.name.toLowerCase().includes(filter.toLowerCase()) || l.category.toLowerCase().includes(filter.toLowerCase()))
+    : layers;
 
   return (
     <div className="w-64 bg-black/95 border-r border-green-500/30 flex flex-col h-full">
@@ -105,15 +113,38 @@ export default function LayerPanel({ activeLayers, onToggle, health }: LayerPane
         </p>
       </div>
 
+      {/* Layer filter */}
+      <div className="px-3 py-2 border-b border-green-500/20">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-gray-600" />
+          <input
+            type="text"
+            placeholder="Filter layers..."
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="w-full bg-gray-900/50 border border-gray-800 rounded pl-7 pr-6 py-1.5 text-[11px] font-mono text-green-400 placeholder-gray-600 focus:outline-none focus:border-green-500/30"
+          />
+          {filter && (
+            <button
+              onClick={() => setFilter('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-600 hover:text-gray-400"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          )}
+        </div>
+      </div>
+
       <div className="flex-1 overflow-y-auto py-2">
-        {categories.map((category) => (
-          <div key={category} className="mb-3">
-            <div className="px-4 py-1.5 text-[10px] font-mono text-gray-500 uppercase tracking-wider">
-              {category}
-            </div>
-            {layers
-              .filter((l) => l.category === category)
-              .map((layer) => (
+        {categories.map((category) => {
+          const categoryLayers = filteredLayers.filter((l) => l.category === category);
+          if (categoryLayers.length === 0) return null;
+          return (
+            <div key={category} className="mb-3">
+              <div className="px-4 py-1.5 text-[10px] font-mono text-gray-500 uppercase tracking-wider">
+                {category}
+              </div>
+              {categoryLayers.map((layer) => (
                 <button
                   key={layer.id}
                   onClick={() => onToggle(layer.id)}
@@ -132,8 +163,14 @@ export default function LayerPanel({ activeLayers, onToggle, health }: LayerPane
                   )}
                 </button>
               ))}
+            </div>
+          );
+        })}
+        {filteredLayers.length === 0 && (
+          <div className="px-4 py-6 text-center text-gray-600 text-[10px] font-mono">
+            NO LAYERS MATCH
           </div>
-        ))}
+        )}
       </div>
 
       <div className="px-4 py-3 border-t border-green-500/30 text-[10px] font-mono text-gray-600">
