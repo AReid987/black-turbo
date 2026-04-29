@@ -15,6 +15,9 @@ import { fetchWeatherAlerts, getSeverityColor, type WeatherAlert } from '@/lib/d
 import { fetchFireHotspots, getFireColor, getFireSize, type FireHotspot } from '@/lib/data/fires';
 import { conflictZones, getConflictColor, getConflictSize, type ConflictZone } from '@/lib/data/conflicts';
 import { satellites, getSatelliteColor, type Satellite } from '@/lib/data/satellites';
+import { fetchCommercialFlights, type CommercialFlight } from '@/lib/data/commercialFlights';
+import { trains, getTrainColor, type Train } from '@/lib/data/trains';
+import { gpsJammingZones, getJammingColor, type GpsJammingZone } from '@/lib/data/gpsJamming';
 import { CctvViewer } from '@/components/panels/CctvViewer';
 import DossierPanel from '@/components/panels/DossierPanel';
 
@@ -119,6 +122,9 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   const fireMarkersRef = useRef<maplibregl.Marker[]>([]);
   const conflictMarkersRef = useRef<maplibregl.Marker[]>([]);
   const satelliteMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const commercialFlightMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const trainMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const jammingMarkersRef = useRef<maplibregl.Marker[]>([]);
   const [selectedCamera, setSelectedCamera] = useState<CctvCamera | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [dossierPos, setDossierPos] = useState<{ lat: number; lng: number } | null>(null);
@@ -132,6 +138,9 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   const [fireHotspots, setFireHotspots] = useState<FireHotspot[]>([]);
   const [conflictList] = useState<ConflictZone[]>(conflictZones);
   const [satelliteList] = useState<Satellite[]>(satellites);
+  const [commercialFlights, setCommercialFlights] = useState<CommercialFlight[]>([]);
+  const [trainList] = useState<Train[]>(trains);
+  const [jammingZones] = useState<GpsJammingZone[]>(gpsJammingZones);
 
   // Initialize map
   useEffect(() => {
@@ -299,6 +308,18 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     };
     load();
     const interval = setInterval(load, 300000);
+    return () => clearInterval(interval);
+  }, [activeLayers]);
+
+  // Fetch commercial flights
+  useEffect(() => {
+    if (!activeLayers['flights_commercial']) return;
+    const load = async () => {
+      const data = await fetchCommercialFlights();
+      setCommercialFlights(data);
+    };
+    load();
+    const interval = setInterval(load, 60000);
     return () => clearInterval(interval);
   }, [activeLayers]);
 
@@ -614,6 +635,75 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     });
   }, [activeLayers, satelliteList]);
 
+  const updateCommercialFlightMarkers = useCallback(() => {
+    if (!map.current) return;
+    commercialFlightMarkersRef.current.forEach(m => m.remove());
+    commercialFlightMarkersRef.current = [];
+    if (!activeLayers['flights_commercial']) return;
+
+    commercialFlights.forEach((f) => {
+      const el = document.createElement('div');
+      // Small airplane icon in blue
+      el.innerHTML = `<div style="width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:8px solid #3b82f6;transform:rotate(${f.heading}deg);filter:drop-shadow(0 0 2px #3b82f6);cursor:pointer;opacity:0.8;"></div>`;
+      el.style.cursor = 'pointer';
+
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([f.lng, f.lat]).addTo(map.current!);
+      const route = f.origin && f.destination ? `${f.origin} → ${f.destination}` : '';
+      const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 })
+        .setHTML(`<div style="font-family:monospace;font-size:11px;color:#3b82f6;background:#000;padding:4px 8px;border:1px solid #3b82f6;max-width:200px;"><strong>${f.callsign}</strong><br/><span style="color:#888">${f.airline || 'Commercial'}<br/>${route}<br/>${f.altitude.toLocaleString()}ft • ${Math.round(f.speed)}kts<br/>${f.aircraft || ''}</span></div>`);
+      el.addEventListener('mouseenter', () => popup.setLngLat([f.lng, f.lat]).addTo(map.current!));
+      el.addEventListener('mouseleave', () => popup.remove());
+
+      commercialFlightMarkersRef.current.push(marker);
+    });
+  }, [activeLayers, commercialFlights]);
+
+  const updateTrainMarkers = useCallback(() => {
+    if (!map.current) return;
+    trainMarkersRef.current.forEach(m => m.remove());
+    trainMarkersRef.current = [];
+    if (!activeLayers['trains']) return;
+
+    trainList.forEach((t) => {
+      const color = getTrainColor(t.type);
+      const el = document.createElement('div');
+      // Rectangle for train
+      el.innerHTML = `<div style="width:10px;height:6px;background:${color};border:1.5px solid #000;border-radius:1px;box-shadow:0 0 4px ${color};cursor:pointer;transform:rotate(${t.heading}deg);"></div>`;
+      el.style.cursor = 'pointer';
+
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([t.lng, t.lat]).addTo(map.current!);
+      const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 })
+        .setHTML(`<div style="font-family:monospace;font-size:10px;color:${color};background:#000;padding:4px 8px;border:1px solid ${color};max-width:200px;"><strong>${t.name}</strong><br/><span style="color:#888">${t.type}<br/>${t.operator}<br/>${t.route ? t.route : ''}<br/>${Math.round(t.speed)} km/h<br/>${t.country}</span></div>`);
+      el.addEventListener('mouseenter', () => popup.setLngLat([t.lng, t.lat]).addTo(map.current!));
+      el.addEventListener('mouseleave', () => popup.remove());
+
+      trainMarkersRef.current.push(marker);
+    });
+  }, [activeLayers, trainList]);
+
+  const updateJammingMarkers = useCallback(() => {
+    if (!map.current) return;
+    jammingMarkersRef.current.forEach(m => m.remove());
+    jammingMarkersRef.current = [];
+    if (!activeLayers['gps_jamming']) return;
+
+    jammingZones.forEach((j) => {
+      const color = getJammingColor(j.intensity);
+      const el = document.createElement('div');
+      // Lightning bolt shape
+      el.innerHTML = `<div style="width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:10px solid ${color};filter:drop-shadow(0 0 3px ${color});cursor:pointer;transform:rotate(180deg);"></div>`;
+      el.style.cursor = 'pointer';
+
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([j.lng, j.lat]).addTo(map.current!);
+      const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 })
+        .setHTML(`<div style="font-family:monospace;font-size:11px;color:${color};background:#000;padding:4px 8px;border:1px solid ${color};max-width:220px;"><strong>GPS JAMMING / SPOOFING</strong><br/><span style="color:#888">${j.source}<br/>${j.description}<br/>Radius: ${j.radius}km<br/>Intensity: ${j.intensity.toUpperCase()}<br/>${j.since ? `Since: ${j.since}` : ''}</span></div>`);
+      el.addEventListener('mouseenter', () => popup.setLngLat([j.lng, j.lat]).addTo(map.current!));
+      el.addEventListener('mouseleave', () => popup.remove());
+
+      jammingMarkersRef.current.push(marker);
+    });
+  }, [activeLayers, jammingZones]);
+
   // Apply all marker updates
   useEffect(() => { if (mapLoaded) updateCctvMarkers(); }, [mapLoaded, activeLayers, cctvList, updateCctvMarkers]);
   useEffect(() => { if (mapLoaded) updateEqMarkers(); }, [mapLoaded, activeLayers, earthquakes, updateEqMarkers]);
@@ -627,6 +717,9 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   useEffect(() => { if (mapLoaded) updateFireMarkers(); }, [mapLoaded, activeLayers, fireHotspots, updateFireMarkers]);
   useEffect(() => { if (mapLoaded) updateConflictMarkers(); }, [mapLoaded, activeLayers, conflictList, updateConflictMarkers]);
   useEffect(() => { if (mapLoaded) updateSatelliteMarkers(); }, [mapLoaded, activeLayers, satelliteList, updateSatelliteMarkers]);
+  useEffect(() => { if (mapLoaded) updateCommercialFlightMarkers(); }, [mapLoaded, activeLayers, commercialFlights, updateCommercialFlightMarkers]);
+  useEffect(() => { if (mapLoaded) updateTrainMarkers(); }, [mapLoaded, activeLayers, trainList, updateTrainMarkers]);
+  useEffect(() => { if (mapLoaded) updateJammingMarkers(); }, [mapLoaded, activeLayers, jammingZones, updateJammingMarkers]);
 
   const filterStyle = getModeFilter(visualMode);
 
