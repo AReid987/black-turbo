@@ -7,7 +7,7 @@ import KeyboardShortcuts from '@/components/panels/KeyboardShortcuts'
 import dynamic from 'next/dynamic'
 import LayerPanel, { layers as layerConfigs } from '@/components/panels/LayerPanel'
 import VisualModeSelector from '@/components/panels/VisualModeSelector'
-import type { VisualMode } from '@/components/map/ShadowbrokerMap'
+import type { VisualMode, HealthMap } from '@/components/map/ShadowbrokerMap'
 import type { CctvCamera } from '@/lib/data/cctv'
 import ToastContainer, { useToasts } from '@/components/ui/Toast'
 
@@ -28,6 +28,7 @@ export default function DashboardPage() {
   const [panelOpen, setPanelOpen] = useState(true)
   const [visualMode, setVisualMode] = useState<VisualMode>('DEFAULT')
   const [activeCamera, setActiveCamera] = useState<CctvCamera | null>(null)
+  const [health, setHealth] = useState<HealthMap>({})
   const { toasts, addToast, dismissToast } = useToasts()
 
   // Initialize layer states
@@ -153,7 +154,7 @@ export default function DashboardPage() {
         {/* Layer panel */}
         {panelOpen && (
           <div className="flex-shrink-0 h-full">
-            <LayerPanel activeLayers={activeLayers} onToggle={toggleLayer} />
+            <LayerPanel activeLayers={activeLayers} onToggle={toggleLayer} health={health} />
           </div>
         )}
 
@@ -164,6 +165,7 @@ export default function DashboardPage() {
             visualMode={visualMode}
             onCameraSelect={setActiveCamera}
             onToast={addToast}
+            onHealthChange={setHealth}
           />
 
           <ToastContainer toasts={toasts} onDismiss={dismissToast} />

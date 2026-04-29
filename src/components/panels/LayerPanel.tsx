@@ -22,6 +22,7 @@ import {
   Server,
   Wind,
 } from 'lucide-react';
+import type { HealthMap } from '@/components/map/ShadowbrokerMap';
 
 export interface LayerConfig {
   id: string;
@@ -78,9 +79,19 @@ export const layers: LayerConfig[] = [
 interface LayerPanelProps {
   activeLayers: Record<string, boolean>;
   onToggle: (id: string) => void;
+  health?: HealthMap;
 }
 
-export default function LayerPanel({ activeLayers, onToggle }: LayerPanelProps) {
+const healthDot = (status?: string) => {
+  switch (status) {
+    case 'online': return 'bg-green-500';
+    case 'degraded': return 'bg-amber-500';
+    case 'offline': return 'bg-red-500';
+    default: return 'bg-gray-700';
+  }
+};
+
+export default function LayerPanel({ activeLayers, onToggle, health }: LayerPanelProps) {
   const categories = [...new Set(layers.map(l => l.category))];
 
   return (
@@ -117,7 +128,7 @@ export default function LayerPanel({ activeLayers, onToggle }: LayerPanelProps) 
                   </span>
                   <span className="truncate">{layer.name}</span>
                   {activeLayers[layer.id] && (
-                    <span className="ml-auto w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                    <span className={`ml-auto w-1.5 h-1.5 rounded-full ${health?.[layer.id] ? healthDot(health[layer.id].status) : 'bg-green-500'} ${!health?.[layer.id] ? 'animate-pulse' : ''}`} />
                   )}
                 </button>
               ))}

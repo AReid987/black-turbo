@@ -25,14 +25,21 @@ import { meshNodes, getMeshColor, type MeshNode } from '@/lib/data/mesh';
 import { CctvViewer } from '@/components/panels/CctvViewer';
 import DossierPanel from '@/components/panels/DossierPanel';
 import type { ToastType } from '@/components/ui/Toast';
+import { useSmartToast } from '@/lib/utils/useSmartToast';
+import { useDataHealth } from '@/lib/utils/useDataHealth';
 
 export type VisualMode = 'DEFAULT' | 'SATELLITE' | 'FLIR' | 'NVG' | 'CRT';
+
+export interface HealthMap {
+  [source: string]: { status: 'online' | 'degraded' | 'offline' | 'unknown'; lastSuccess?: number; lastError?: number };
+}
 
 interface ShadowbrokerMapProps {
   activeLayers: Record<string, boolean>;
   visualMode: VisualMode;
   onCameraSelect?: (camera: CctvCamera | null) => void;
   onToast?: (toast: { type: ToastType; title: string; message?: string; duration?: number }) => void;
+  onHealthChange?: (health: HealthMap) => void;
 }
 
 const getSatelliteStyle = (): maplibregl.StyleSpecification => ({
@@ -113,7 +120,7 @@ function createTerminatorGeoJSON(): GeoJSON.Feature<GeoJSON.Polygon> {
   };
 }
 
-export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSelect, onToast }: ShadowbrokerMapProps) {
+export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSelect, onToast, onHealthChange }: ShadowbrokerMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const cctvMarkersRef = useRef<maplibregl.Marker[]>([]);
@@ -157,6 +164,21 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   const [radioList] = useState<RadioStation[]>(radioStations);
   const [carrierList] = useState<CarrierGroup[]>(carrierGroups);
   const [meshList] = useState<MeshNode[]>(meshNodes);
+
+  // Smart toast + health tracking
+  const { smartToast, resetLayer } = useSmartToast(onToast);
+  const { health, updateHealth } = useDataHealth();
+
+  // Expose health changes to parent
+  useEffect(() => {
+    if (onHealthChange) {
+      const mapped: HealthMap = {};
+      for (const [k, v] of Object.entries(health)) {
+        mapped[k] = { status: v.status, lastSuccess: v.lastSuccess, lastError: v.lastError };
+      }
+      onHealthChange(mapped);
+    }
+  }, [health, onHealthChange]);
 
   // Initialize map
   // Expose flyTo for external search integration
@@ -258,69 +280,88 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
 
   // Fetch earthquakes
   useEffect(() => {
-    if (!activeLayers['earthquakes']) return;
+    if (!activeLayers['earthquakes']) { resetLayer('earthquakes'); return; }
     const load = async () => {
-      const data = await fetchEarthquakes();
-      setEarthquakes(data);
-      // Notify on significant earthquakes
-      const significant = data.filter(e => e.magnitude >= 5.5);
-      if (significant.length > 0 && onToast) {
-        onToast({
-          type: 'warning',
-          title: `EARTHQUAKE ALERT`,
-          message: `M${significant[0].magnitude} detected near ${significant[0].place}`,
-          duration: 8000,
-        });
+      try {
+        const data = await fetchEarthquakes();
+        setEarthquakes(data);
+        updateHealth('earthquakes', true);
+        // Only toast on significant NEW earthquakes (first load or changed)
+        const significant = data.filter(e => e.magnitude >= 5.5);
+        if (significant.length > 0) {
+          const top = significant[0];
+          smartToast('earthquakes', {
+            type: 'warning',
+            title: `EARTHQUAKE ALERT`,
+            message: `M${top.magnitude} detected near ${top.place}`,
+            duration: 8000,
+          }, top.id);
+        }
+      } catch {
+        updateHealth('earthquakes', false);
       }
     };
     load();
     const interval = setInterval(load, 60000);
     return () => clearInterval(interval);
-  }, [activeLayers, onToast]);
+  }, [activeLayers, smartToast, updateHealth, resetLayer]);
 
   // Fetch military aircraft
   useEffect(() => {
-    if (!activeLayers['flights_military']) return;
+    if (!activeLayers['flights_military']) { resetLayer('flights_military'); return; }
     const load = async () => {
-      const data = await fetchMilitaryAircraft();
-      setAircraft(data);
-      if (data.length > 0 && onToast) {
-        onToast({
+      try {
+        const data = await fetchMilitaryAircraft();
+        setAircraft(data);
+        updateHealth('flights_military', true);
+        smartToast('flights_military', {
           type: 'info',
           title: `MIL AIR TRACKING`,
           message: `${data.length} military aircraft active`,
           duration: 4000,
-        });
+        }, `count:${data.length}`);
+      } catch {
+        updateHealth('flights_military', false);
       }
     };
     load();
     const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
-  }, [activeLayers, onToast]);
+  }, [activeLayers, smartToast, updateHealth, resetLayer]);
 
   // Fetch air quality
   useEffect(() => {
     if (!activeLayers['air_quality']) return;
     const load = async () => {
-      const data = await fetchAirQuality();
-      setAirQuality(data);
+      try {
+        const data = await fetchAirQuality();
+        setAirQuality(data);
+        updateHealth('air_quality', true);
+      } catch {
+        updateHealth('air_quality', false);
+      }
     };
     load();
     const interval = setInterval(load, 300000);
     return () => clearInterval(interval);
-  }, [activeLayers]);
+  }, [activeLayers, updateHealth]);
 
   // Fetch CCTV cameras dynamically
   useEffect(() => {
     if (!activeLayers['cctv']) return;
     const load = async () => {
-      const data = await getAllCameras();
-      setCctvList(data);
+      try {
+        const data = await getAllCameras();
+        setCctvList(data);
+        updateHealth('cctv', true);
+      } catch {
+        updateHealth('cctv', false);
+      }
     };
     load();
     const interval = setInterval(load, 300000);
     return () => clearInterval(interval);
-  }, [activeLayers]);
+  }, [activeLayers, updateHealth]);
 
   // Fetch Shodan hosts
   useEffect(() => {
@@ -329,76 +370,93 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
       try {
         const data = await searchShodan('webcam');
         setShodanHosts(data.matches.slice(0, 100));
-      } catch (e) {
-        console.error('Shodan fetch failed:', e);
+        updateHealth('shodan', true);
+      } catch {
+        updateHealth('shodan', false);
       }
     };
     load();
-  }, [activeLayers]);
+  }, [activeLayers, updateHealth]);
 
   // Fetch vessels
   useEffect(() => {
-    if (!activeLayers['ships']) return;
+    if (!activeLayers['ships']) { resetLayer('ships'); return; }
     const load = async () => {
-      const data = await fetchVessels();
-      setVessels(data);
-      if (onToast) {
-        onToast({
+      try {
+        const data = await fetchVessels();
+        setVessels(data);
+        updateHealth('ships', true);
+        smartToast('ships', {
           type: 'info',
           title: `NAVAL TRAFFIC`,
           message: `${data.length} vessels tracked`,
           duration: 4000,
-        });
+        }, `count:${data.length}`);
+      } catch {
+        updateHealth('ships', false);
       }
     };
     load();
     const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
-  }, [activeLayers, onToast]);
+  }, [activeLayers, smartToast, updateHealth, resetLayer]);
 
   // Fetch weather alerts
   useEffect(() => {
     if (!activeLayers['weather']) return;
     const load = async () => {
-      const data = await fetchWeatherAlerts();
-      setWeatherAlerts(data);
+      try {
+        const data = await fetchWeatherAlerts();
+        setWeatherAlerts(data);
+        updateHealth('weather', true);
+      } catch {
+        updateHealth('weather', false);
+      }
     };
     load();
     const interval = setInterval(load, 300000);
     return () => clearInterval(interval);
-  }, [activeLayers]);
+  }, [activeLayers, updateHealth]);
 
   // Fetch fire hotspots
   useEffect(() => {
     if (!activeLayers['fires']) return;
     const load = async () => {
-      const data = await fetchFireHotspots();
-      setFireHotspots(data);
+      try {
+        const data = await fetchFireHotspots();
+        setFireHotspots(data);
+        updateHealth('fires', true);
+      } catch {
+        updateHealth('fires', false);
+      }
     };
     load();
     const interval = setInterval(load, 300000);
     return () => clearInterval(interval);
-  }, [activeLayers]);
+  }, [activeLayers, updateHealth]);
 
   // Fetch commercial flights
   useEffect(() => {
-    if (!activeLayers['flights_commercial']) return;
+    if (!activeLayers['flights_commercial']) { resetLayer('flights_commercial'); return; }
     const load = async () => {
-      const data = await fetchCommercialFlights();
-      setCommercialFlights(data);
-      if (data.length > 0 && onToast) {
-        onToast({
+      try {
+        const data = await fetchCommercialFlights();
+        setCommercialFlights(data);
+        updateHealth('flights_commercial', true);
+        smartToast('flights_commercial', {
           type: 'info',
           title: `COMMERCIAL AIR`,
           message: `${data.length} flights tracked`,
           duration: 4000,
-        });
+        }, `count:${data.length}`);
+      } catch {
+        updateHealth('flights_commercial', false);
       }
     };
     load();
     const interval = setInterval(load, 60000);
     return () => clearInterval(interval);
-  }, [activeLayers, onToast]);
+  }, [activeLayers, smartToast, updateHealth, resetLayer]);
 
   // --- MARKER UPDATERS ---
 
