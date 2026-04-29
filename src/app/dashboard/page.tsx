@@ -114,6 +114,25 @@ export default function DashboardPage() {
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
             <span className="text-green-500 text-xs font-mono tracking-wider">SECURE CONNECTION</span>
           </div>
+          {/* Data source health summary */}
+          {Object.keys(health).length > 0 && (
+            <div className="hidden md:flex items-center space-x-2">
+              <span className="text-gray-600 text-[10px] font-mono">|</span>
+              {Object.values(health).some(h => h.status === 'offline') ? (
+                <span className="text-red-400 text-[10px] font-mono">
+                  {Object.values(health).filter(h => h.status === 'online').length}/{Object.keys(health).length} SOURCES
+                </span>
+              ) : Object.values(health).some(h => h.status === 'degraded') ? (
+                <span className="text-amber-400 text-[10px] font-mono">
+                  {Object.values(health).filter(h => h.status === 'online').length}/{Object.keys(health).length} SOURCES
+                </span>
+              ) : (
+                <span className="text-green-400 text-[10px] font-mono">
+                  {Object.keys(health).length} SOURCES ONLINE
+                </span>
+              )}
+            </div>
+          )}
           <div className="hidden md:flex items-center space-x-3">
             <span className="text-gray-600 text-[10px] font-mono">|</span>
             <span className="text-gray-500 text-[10px] font-mono">
