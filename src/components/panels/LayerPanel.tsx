@@ -33,7 +33,7 @@ export interface LayerConfig {
 
 export const layers: LayerConfig[] = [
   // Surveillance
-  { id: 'cctv', name: 'CCTV Mesh (30)', icon: <Video className="w-3.5 h-3.5" />, defaultOn: true, category: 'Surveillance' },
+  { id: 'cctv', name: 'CCTV Mesh (882+)', icon: <Video className="w-3.5 h-3.5" />, defaultOn: true, category: 'Surveillance' },
 
   // Aviation
   { id: 'flights_military', name: 'Military Aircraft', icon: <Plane className="w-3.5 h-3.5" />, defaultOn: true, category: 'Aviation' },
@@ -126,7 +126,7 @@ export default function LayerPanel({ activeLayers, onToggle }: LayerPanelProps) 
       </div>
 
       <div className="px-4 py-3 border-t border-green-500/30 text-[10px] font-mono text-gray-600">
-        Shadowbroker OSINT v0.2
+        Shadowbroker OSINT v0.3
       </div>
     </div>
   );

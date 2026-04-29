@@ -9,6 +9,8 @@ import { fetchMilitaryAircraft, type Aircraft } from '@/lib/data/aircraft';
 import { fetchAirQuality, getAqiColor, getAqiLabel, type AirQualityStation } from '@/lib/data/airquality';
 import { volcanoes } from '@/lib/data/volcanoes';
 import { militaryBases, powerPlants, dataCenters } from '@/lib/data/infrastructure';
+import { searchShodan, getShodanColor, type ShodanHost } from '@/lib/data/shodan';
+import { fetchVessels, getVesselColor, type Vessel } from '@/lib/data/vessels';
 import { CctvViewer } from '@/components/panels/CctvViewer';
 import DossierPanel from '@/components/panels/DossierPanel';
 
@@ -107,6 +109,8 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   const volcanoMarkersRef = useRef<maplibregl.Marker[]>([]);
   const infraMarkersRef = useRef<maplibregl.Marker[]>([]);
   const aqMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const shodanMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const vesselMarkersRef = useRef<maplibregl.Marker[]>([]);
   const [selectedCamera, setSelectedCamera] = useState<CctvCamera | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [dossierPos, setDossierPos] = useState<{ lat: number; lng: number } | null>(null);
@@ -114,6 +118,8 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   const [aircraft, setAircraft] = useState<Aircraft[]>([]);
   const [airQuality, setAirQuality] = useState<AirQualityStation[]>([]);
   const [cctvList, setCctvList] = useState<CctvCamera[]>(cctvCameras);
+  const [shodanHosts, setShodanHosts] = useState<ShodanHost[]>([]);
+  const [vessels, setVessels] = useState<Vessel[]>([]);
 
   // Initialize map
   useEffect(() => {
@@ -231,6 +237,32 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     };
     load();
     const interval = setInterval(load, 300000);
+    return () => clearInterval(interval);
+  }, [activeLayers]);
+
+  // Fetch Shodan hosts
+  useEffect(() => {
+    if (!activeLayers['shodan']) return;
+    const load = async () => {
+      try {
+        const data = await searchShodan('webcam');
+        setShodanHosts(data.matches.slice(0, 100));
+      } catch (e) {
+        console.error('Shodan fetch failed:', e);
+      }
+    };
+    load();
+  }, [activeLayers]);
+
+  // Fetch vessels
+  useEffect(() => {
+    if (!activeLayers['ships']) return;
+    const load = async () => {
+      const data = await fetchVessels();
+      setVessels(data);
+    };
+    load();
+    const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
   }, [activeLayers]);
 
@@ -404,6 +436,52 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     });
   }, [activeLayers, airQuality]);
 
+  const updateShodanMarkers = useCallback(() => {
+    if (!map.current) return;
+    shodanMarkersRef.current.forEach(m => m.remove());
+    shodanMarkersRef.current = [];
+    if (!activeLayers['shodan']) return;
+
+    shodanHosts.forEach((host) => {
+      const color = getShodanColor(host.ports);
+      const el = document.createElement('div');
+      el.innerHTML = `<div style="width:8px;height:8px;background:${color};border:1.5px solid #000;border-radius:1px;box-shadow:0 0 4px ${color};cursor:pointer;transform:rotate(45deg);"></div>`;
+      el.style.cursor = 'pointer';
+
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([host.longitude, host.latitude]).addTo(map.current!);
+      const vulns = host.vulns ? `<br/><span style="color:#ef4444">VULNS: ${host.vulns.slice(0, 3).join(', ')}</span>` : '';
+      const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 })
+        .setHTML(`<div style="font-family:monospace;font-size:10px;color:${color};background:#000;padding:4px 8px;border:1px solid ${color};max-width:220px;"><strong>${host.ip_str}</strong><br/><span style="color:#888">${host.org || host.isp || 'Unknown'}<br/>Ports: ${host.ports.join(', ')}<br/>${host.city || ''}, ${host.country_code || ''}<br/>${host.product || ''} ${host.version || ''}${vulns}</span></div>`);
+      el.addEventListener('mouseenter', () => popup.setLngLat([host.longitude, host.latitude]).addTo(map.current!));
+      el.addEventListener('mouseleave', () => popup.remove());
+
+      shodanMarkersRef.current.push(marker);
+    });
+  }, [activeLayers, shodanHosts]);
+
+  const updateVesselMarkers = useCallback(() => {
+    if (!map.current) return;
+    vesselMarkersRef.current.forEach(m => m.remove());
+    vesselMarkersRef.current = [];
+    if (!activeLayers['ships']) return;
+
+    vessels.forEach((v) => {
+      const color = getVesselColor(v.type);
+      const el = document.createElement('div');
+      // Chevron/ship shape pointing in heading direction
+      el.innerHTML = `<div style="width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:10px solid ${color};transform:rotate(${v.heading}deg);filter:drop-shadow(0 0 3px ${color});cursor:pointer;"></div>`;
+      el.style.cursor = 'pointer';
+
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([v.lng, v.lat]).addTo(map.current!);
+      const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 })
+        .setHTML(`<div style="font-family:monospace;font-size:11px;color:${color};background:#000;padding:4px 8px;border:1px solid ${color};max-width:200px;"><strong>${v.name}</strong><br/><span style="color:#888">${v.type} • ${v.flag || 'UNK'}<br/>${Math.round(v.speed)}kts • HDG ${v.heading}°<br/>${v.destination ? `→ ${v.destination}` : ''}</span></div>`);
+      el.addEventListener('mouseenter', () => popup.setLngLat([v.lng, v.lat]).addTo(map.current!));
+      el.addEventListener('mouseleave', () => popup.remove());
+
+      vesselMarkersRef.current.push(marker);
+    });
+  }, [activeLayers, vessels]);
+
   // Apply all marker updates
   useEffect(() => { if (mapLoaded) updateCctvMarkers(); }, [mapLoaded, activeLayers, cctvList, updateCctvMarkers]);
   useEffect(() => { if (mapLoaded) updateEqMarkers(); }, [mapLoaded, activeLayers, earthquakes, updateEqMarkers]);
@@ -411,6 +489,8 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   useEffect(() => { if (mapLoaded) updateVolcanoMarkers(); }, [mapLoaded, activeLayers, updateVolcanoMarkers]);
   useEffect(() => { if (mapLoaded) updateInfraMarkers(); }, [mapLoaded, activeLayers, updateInfraMarkers]);
   useEffect(() => { if (mapLoaded) updateAqMarkers(); }, [mapLoaded, activeLayers, airQuality, updateAqMarkers]);
+  useEffect(() => { if (mapLoaded) updateShodanMarkers(); }, [mapLoaded, activeLayers, shodanHosts, updateShodanMarkers]);
+  useEffect(() => { if (mapLoaded) updateVesselMarkers(); }, [mapLoaded, activeLayers, vessels, updateVesselMarkers]);
 
   const filterStyle = getModeFilter(visualMode);
 
