@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { X, Globe, Users, Landmark, BookOpen, Satellite, TrendingUp, Shield, Copy, Check } from 'lucide-react';
+import { fetchWithRetry } from '@/lib/utils/fetchWithRetry';
 
 interface DossierData {
   country?: string;
@@ -38,8 +39,9 @@ export default function DossierPanel({ lat, lng, onClose }: DossierPanelProps) {
     async function load() {
       setLoading(true);
       try {
-        const geoRes = await fetch(
-          `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`
+        const geoRes = await fetchWithRetry(
+          `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`,
+          { retries: 1, timeout: 5000 }
         );
         const geo = await geoRes.json();
         const countryCode = geo.countryCode?.toLowerCase();
@@ -47,7 +49,7 @@ export default function DossierPanel({ lat, lng, onClose }: DossierPanelProps) {
 
         if (!countryCode || cancelled) return;
 
-        const countryRes = await fetch(`https://restcountries.com/v3.1/alpha/${countryCode}`);
+        const countryRes = await fetchWithRetry(`https://restcountries.com/v3.1/alpha/${countryCode}`, { retries: 1, timeout: 5000 });
         const countryData = await countryRes.json();
         const c = countryData[0];
 
@@ -73,8 +75,9 @@ export default function DossierPanel({ lat, lng, onClose }: DossierPanelProps) {
           independent: c.independent,
         });
 
-        const wikiRes = await fetch(
-          `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(countryName)}`
+        const wikiRes = await fetchWithRetry(
+          `https://en.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(countryName)}`,
+          { retries: 1, timeout: 5000 }
         );
         if (wikiRes.ok) {
           const wiki = await wikiRes.json();

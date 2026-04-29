@@ -1,3 +1,5 @@
+import { fetchWithRetry } from '@/lib/utils/fetchWithRetry';
+
 export interface ShodanHost {
   ip_str: string;
   latitude: number;
@@ -29,7 +31,7 @@ const SHODAN_QUERIES = [
 ];
 
 export async function searchShodan(query: string = 'webcam'): Promise<ShodanSearchResult> {
-  const res = await fetch(`/api/proxy/shodan?q=${encodeURIComponent(query)}`);
+  const res = await fetchWithRetry(`/api/proxy/shodan?q=${encodeURIComponent(query)}`, { retries: 1, timeout: 8000 });
   if (!res.ok) throw new Error(`Shodan error: ${res.status}`);
   const data = await res.json();
   return {

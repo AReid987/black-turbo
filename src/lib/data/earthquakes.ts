@@ -1,3 +1,5 @@
+import { fetchWithRetry } from '@/lib/utils/fetchWithRetry';
+
 export interface EarthquakeFeature {
   id: string;
   lat: number;
@@ -11,9 +13,9 @@ export interface EarthquakeFeature {
 
 export async function fetchEarthquakes(): Promise<EarthquakeFeature[]> {
   try {
-    const res = await fetch(
+    const res = await fetchWithRetry(
       'https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson',
-      { cache: 'no-store' }
+      { cache: 'no-store', retries: 1, timeout: 8000 }
     );
     if (!res.ok) throw new Error(`USGS error: ${res.status}`);
     const data = await res.json();

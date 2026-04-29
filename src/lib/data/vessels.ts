@@ -1,3 +1,5 @@
+import { fetchWithRetry } from '@/lib/utils/fetchWithRetry';
+
 export interface Vessel {
   mmsi: number;
   name: string;
@@ -19,9 +21,9 @@ export async function fetchVessels(): Promise<Vessel[]> {
   // Try AIS API endpoints
   try {
     // MarineTraffic free API (limited)
-    const res = await fetch(
+    const res = await fetchWithRetry(
       'https://aisstream.io/api/v0/latest?apiKey=' + process.env.NEXT_PUBLIC_AISTREAM_API_KEY,
-      { cache: 'no-store' }
+      { cache: 'no-store', retries: 1, timeout: 8000 }
     );
     if (res.ok) {
       const data = await res.json();

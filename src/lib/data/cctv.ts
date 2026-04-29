@@ -86,7 +86,7 @@ export async function fetchTflCameras(): Promise<CctvCamera[]> {
   }
 
   try {
-    const res = await fetch('https://api.tfl.gov.uk/Place/Type/JamCam');
+    const res = await fetchWithRetry('https://api.tfl.gov.uk/Place/Type/JamCam', { retries: 2, timeout: 10000 });
     if (!res.ok) throw new Error(`TFL API error: ${res.status}`);
     const data = await res.json();
 
@@ -115,6 +115,8 @@ export async function fetchTflCameras(): Promise<CctvCamera[]> {
     return [];
   }
 }
+
+import { fetchWithRetry } from '@/lib/utils/fetchWithRetry';
 
 export async function getAllCameras(): Promise<CctvCamera[]> {
   const tfl = await fetchTflCameras();

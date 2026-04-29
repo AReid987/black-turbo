@@ -1,3 +1,5 @@
+import { fetchWithRetry } from '@/lib/utils/fetchWithRetry';
+
 export interface AirQualityStation {
   id: string;
   lat: number;
@@ -14,9 +16,9 @@ export interface AirQualityStation {
 export async function fetchAirQuality(): Promise<AirQualityStation[]> {
   try {
     // OpenAQ v2 - latest measurements
-    const res = await fetch(
+    const res = await fetchWithRetry(
       'https://api.openaq.org/v2/latest?limit=500&parameter=pm25&order_by=value&sort=desc',
-      { cache: 'no-store' }
+      { cache: 'no-store', retries: 1, timeout: 8000 }
     );
     if (!res.ok) throw new Error(`OpenAQ error: ${res.status}`);
     const data = await res.json();

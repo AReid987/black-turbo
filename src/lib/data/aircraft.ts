@@ -10,10 +10,11 @@ export interface Aircraft {
   category?: string;
 }
 
+import { fetchWithRetry } from '@/lib/utils/fetchWithRetry';
+
 export async function fetchMilitaryAircraft(): Promise<Aircraft[]> {
   try {
-    const res = await fetch('https://api.adsb.lol/v2/mil', { cache: 'no-store' });
-    if (!res.ok) throw new Error(`adsb.lol error: ${res.status}`);
+    const res = await fetchWithRetry('https://api.adsb.lol/v2/mil', { cache: 'no-store', retries: 2, timeout: 8000 });
     const data = await res.json();
 
     return (data.ac || []).map((ac: any) => ({

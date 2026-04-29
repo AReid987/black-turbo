@@ -1,3 +1,5 @@
+import { fetchWithRetry } from '@/lib/utils/fetchWithRetry';
+
 export interface CommercialFlight {
   callsign: string;
   lat: number;
@@ -35,7 +37,7 @@ export async function fetchCommercialFlights(): Promise<CommercialFlight[]> {
   for (const region of regions) {
     try {
       const url = `https://api.adsb.lol/v2/lat/${(region.minLat + region.maxLat) / 2}/lon/${(region.minLon + region.maxLon) / 2}/dist/500`;
-      const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+      const res = await fetchWithRetry(url, { cache: 'no-store', retries: 1, timeout: 5000 });
       if (!res.ok) continue;
       const data = await res.json();
 

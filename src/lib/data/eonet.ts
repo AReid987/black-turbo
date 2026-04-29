@@ -1,3 +1,5 @@
+import { fetchWithRetry } from '@/lib/utils/fetchWithRetry';
+
 export interface EonetEvent {
   id: string;
   title: string;
@@ -14,7 +16,7 @@ export async function fetchEonetEvents(categories?: string[]): Promise<EonetEven
     if (categories && categories.length > 0) {
       url += `&categoryId=${categories.join(',')}`;
     }
-    const res = await fetch(url, { cache: 'no-store' });
+    const res = await fetchWithRetry(url, { cache: 'no-store', retries: 1, timeout: 8000 });
     if (!res.ok) throw new Error(`EONET error: ${res.status}`);
     const data = await res.json();
 
