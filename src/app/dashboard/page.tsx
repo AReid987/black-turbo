@@ -154,25 +154,67 @@ export default function DashboardPage() {
 
           {/* Bottom status bar */}
           <div className="absolute bottom-0 left-0 right-0 bg-black/80 border-t border-green-500/20 px-4 py-1.5 flex items-center justify-between z-20">
-            <div className="flex items-center space-x-4">
-              <span className="text-[10px] font-mono text-green-500/60">
-                CCTV: {activeLayers['cctv'] ? 'ACTIVE' : 'OFF'}
+            <div className="flex items-center space-x-3 overflow-x-auto">
+              <span className="text-[10px] font-mono text-green-500/60 whitespace-nowrap">
+                {Object.values(activeLayers).filter(Boolean).length} LAYERS ACTIVE
               </span>
               <span className="text-[10px] font-mono text-gray-600">|</span>
-              <span className="text-[10px] font-mono text-green-500/60">
+              <span className="text-[10px] font-mono text-green-500/60 whitespace-nowrap">
                 MODE: {visualMode}
               </span>
+              {activeLayers['cctv'] && (
+                <>
+                  <span className="text-[10px] font-mono text-gray-600">|</span>
+                  <span className="text-[10px] font-mono text-green-400/80 whitespace-nowrap">882 CAMERAS</span>
+                </>
+              )}
+              {activeLayers['flights_military'] && (
+                <>
+                  <span className="text-[10px] font-mono text-gray-600">|</span>
+                  <span className="text-[10px] font-mono text-red-400/80 whitespace-nowrap">MIL AIR</span>
+                </>
+              )}
+              {activeLayers['flights_commercial'] && (
+                <>
+                  <span className="text-[10px] font-mono text-gray-600">|</span>
+                  <span className="text-[10px] font-mono text-blue-400/80 whitespace-nowrap">CIV AIR</span>
+                </>
+              )}
+              {activeLayers['ships'] && (
+                <>
+                  <span className="text-[10px] font-mono text-gray-600">|</span>
+                  <span className="text-[10px] font-mono text-cyan-400/80 whitespace-nowrap">20 VESSELS</span>
+                </>
+              )}
+              {activeLayers['carriers'] && (
+                <>
+                  <span className="text-[10px] font-mono text-gray-600">|</span>
+                  <span className="text-[10px] font-mono text-red-400/80 whitespace-nowrap">20 CSG</span>
+                </>
+              )}
+              {activeLayers['conflict'] && (
+                <>
+                  <span className="text-[10px] font-mono text-gray-600">|</span>
+                  <span className="text-[10px] font-mono text-orange-400/80 whitespace-nowrap">15 CONFLICTS</span>
+                </>
+              )}
+              {activeLayers['shodan'] && (
+                <>
+                  <span className="text-[10px] font-mono text-gray-600">|</span>
+                  <span className="text-[10px] font-mono text-amber-400/80 whitespace-nowrap">SHODAN</span>
+                </>
+              )}
               {activeCamera && (
                 <>
                   <span className="text-[10px] font-mono text-gray-600">|</span>
-                  <span className="text-[10px] font-mono text-amber-400">
-                    MONITORING: {activeCamera.name}
+                  <span className="text-[10px] font-mono text-amber-400 whitespace-nowrap">
+                    MONITORING: {activeCamera.name.toUpperCase()}
                   </span>
                 </>
               )}
             </div>
-            <span className="text-[10px] font-mono text-gray-600">
-              SHADOWBROKER OSINT
+            <span className="text-[10px] font-mono text-gray-600 whitespace-nowrap ml-2">
+              SHADOWBROKER v0.4
             </span>
           </div>
         </div>

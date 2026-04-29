@@ -40,35 +40,35 @@ export const layers: LayerConfig[] = [
   { id: 'flights_commercial', name: 'Commercial Flights', icon: <Plane className="w-3.5 h-3.5" />, defaultOn: false, category: 'Aviation' },
 
   // Maritime
-  { id: 'ships', name: 'Naval Traffic (AIS)', icon: <Ship className="w-3.5 h-3.5" />, defaultOn: false, category: 'Maritime' },
-  { id: 'carriers', name: 'Carrier Groups', icon: <Ship className="w-3.5 h-3.5" />, defaultOn: false, category: 'Maritime' },
+  { id: 'ships', name: 'Naval Traffic (20)', icon: <Ship className="w-3.5 h-3.5" />, defaultOn: false, category: 'Maritime' },
+  { id: 'carriers', name: 'Carrier Groups (20)', icon: <Ship className="w-3.5 h-3.5" />, defaultOn: false, category: 'Maritime' },
 
   // Ground
-  { id: 'trains', name: 'Rail Tracking', icon: <Train className="w-3.5 h-3.5" />, defaultOn: false, category: 'Ground' },
+  { id: 'trains', name: 'Rail Tracking (19)', icon: <Train className="w-3.5 h-3.5" />, defaultOn: false, category: 'Ground' },
 
   // Space
-  { id: 'satellites', name: 'Satellites', icon: <Satellite className="w-3.5 h-3.5" />, defaultOn: false, category: 'Space' },
+  { id: 'satellites', name: 'Satellites (24)', icon: <Satellite className="w-3.5 h-3.5" />, defaultOn: false, category: 'Space' },
 
   // SIGINT
-  { id: 'radios', name: 'KiwiSDR / Scanners', icon: <Radio className="w-3.5 h-3.5" />, defaultOn: false, category: 'SIGINT' },
-  { id: 'mesh', name: 'Mesh / APRS', icon: <Wifi className="w-3.5 h-3.5" />, defaultOn: false, category: 'SIGINT' },
-  { id: 'gps_jamming', name: 'GPS Jamming', icon: <Zap className="w-3.5 h-3.5" />, defaultOn: false, category: 'SIGINT' },
+  { id: 'radios', name: 'KiwiSDR / Scanners (21)', icon: <Radio className="w-3.5 h-3.5" />, defaultOn: false, category: 'SIGINT' },
+  { id: 'mesh', name: 'Mesh / APRS (26)', icon: <Wifi className="w-3.5 h-3.5" />, defaultOn: false, category: 'SIGINT' },
+  { id: 'gps_jamming', name: 'GPS Jamming (15)', icon: <Zap className="w-3.5 h-3.5" />, defaultOn: false, category: 'SIGINT' },
 
   // Environment
   { id: 'earthquakes', name: 'Earthquakes (USGS)', icon: <Activity className="w-3.5 h-3.5" />, defaultOn: true, category: 'Environment' },
   { id: 'volcanoes', name: 'Volcanoes (60)', icon: <MapIcon className="w-3.5 h-3.5" />, defaultOn: true, category: 'Environment' },
-  { id: 'fires', name: 'Fire Hotspots', icon: <Flame className="w-3.5 h-3.5" />, defaultOn: false, category: 'Environment' },
-  { id: 'weather', name: 'Severe Weather', icon: <Sun className="w-3.5 h-3.5" />, defaultOn: false, category: 'Environment' },
+  { id: 'fires', name: 'Fire Hotspots (16)', icon: <Flame className="w-3.5 h-3.5" />, defaultOn: false, category: 'Environment' },
+  { id: 'weather', name: 'Severe Weather (10)', icon: <Sun className="w-3.5 h-3.5" />, defaultOn: false, category: 'Environment' },
   { id: 'air_quality', name: 'Air Quality (OpenAQ)', icon: <Wind className="w-3.5 h-3.5" />, defaultOn: false, category: 'Environment' },
 
   // Infrastructure
   { id: 'infrastructure_bases', name: 'Military Bases (200+)', icon: <Shield className="w-3.5 h-3.5" />, defaultOn: false, category: 'Infrastructure' },
   { id: 'infrastructure_power', name: 'Power Plants (500+)', icon: <Factory className="w-3.5 h-3.5" />, defaultOn: false, category: 'Infrastructure' },
   { id: 'infrastructure_datacenters', name: 'Data Centers (30)', icon: <Server className="w-3.5 h-3.5" />, defaultOn: false, category: 'Infrastructure' },
-  { id: 'outages', name: 'Internet Outages', icon: <Wifi className="w-3.5 h-3.5" />, defaultOn: false, category: 'Infrastructure' },
+  { id: 'outages', name: 'Internet Outages (15)', icon: <Wifi className="w-3.5 h-3.5" />, defaultOn: false, category: 'Infrastructure' },
 
   // Geopolitics
-  { id: 'conflict', name: 'Conflict Zones', icon: <Globe className="w-3.5 h-3.5" />, defaultOn: false, category: 'Geopolitics' },
+  { id: 'conflict', name: 'Conflict Zones (15)', icon: <Globe className="w-3.5 h-3.5" />, defaultOn: false, category: 'Geopolitics' },
 
   // Overlays
   { id: 'daynight', name: 'Day / Night Terminator', icon: <Moon className="w-3.5 h-3.5" />, defaultOn: true, category: 'Overlays' },
@@ -126,7 +126,7 @@ export default function LayerPanel({ activeLayers, onToggle }: LayerPanelProps) 
       </div>
 
       <div className="px-4 py-3 border-t border-green-500/30 text-[10px] font-mono text-gray-600">
-        Shadowbroker OSINT v0.3
+        Shadowbroker OSINT v0.4
       </div>
     </div>
   );
