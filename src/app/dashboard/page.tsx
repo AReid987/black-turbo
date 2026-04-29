@@ -9,6 +9,7 @@ import LayerPanel, { layers as layerConfigs } from '@/components/panels/LayerPan
 import VisualModeSelector from '@/components/panels/VisualModeSelector'
 import type { VisualMode } from '@/components/map/ShadowbrokerMap'
 import type { CctvCamera } from '@/lib/data/cctv'
+import ToastContainer, { useToasts } from '@/components/ui/Toast'
 
 // Dynamic import to avoid SSR issues with MapLibre
 const ShadowbrokerMap = dynamic(() => import('@/components/map/ShadowbrokerMap'), {
@@ -27,6 +28,7 @@ export default function DashboardPage() {
   const [panelOpen, setPanelOpen] = useState(true)
   const [visualMode, setVisualMode] = useState<VisualMode>('DEFAULT')
   const [activeCamera, setActiveCamera] = useState<CctvCamera | null>(null)
+  const { toasts, addToast, dismissToast } = useToasts()
 
   // Initialize layer states
   const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>(() => {
@@ -161,7 +163,10 @@ export default function DashboardPage() {
             activeLayers={activeLayers}
             visualMode={visualMode}
             onCameraSelect={setActiveCamera}
+            onToast={addToast}
           />
+
+          <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
           {/* Bottom status bar */}
           <div className="absolute bottom-0 left-0 right-0 bg-black/80 border-t border-green-500/20 px-4 py-1.5 flex items-center justify-between z-20">

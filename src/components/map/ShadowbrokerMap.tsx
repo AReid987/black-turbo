@@ -24,6 +24,7 @@ import { carrierGroups, getCarrierColor, type CarrierGroup } from '@/lib/data/ca
 import { meshNodes, getMeshColor, type MeshNode } from '@/lib/data/mesh';
 import { CctvViewer } from '@/components/panels/CctvViewer';
 import DossierPanel from '@/components/panels/DossierPanel';
+import type { ToastType } from '@/components/ui/Toast';
 
 export type VisualMode = 'DEFAULT' | 'SATELLITE' | 'FLIR' | 'NVG' | 'CRT';
 
@@ -31,6 +32,7 @@ interface ShadowbrokerMapProps {
   activeLayers: Record<string, boolean>;
   visualMode: VisualMode;
   onCameraSelect?: (camera: CctvCamera | null) => void;
+  onToast?: (toast: { type: ToastType; title: string; message?: string; duration?: number }) => void;
 }
 
 const getSatelliteStyle = (): maplibregl.StyleSpecification => ({
@@ -111,7 +113,7 @@ function createTerminatorGeoJSON(): GeoJSON.Feature<GeoJSON.Polygon> {
   };
 }
 
-export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSelect }: ShadowbrokerMapProps) {
+export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSelect, onToast }: ShadowbrokerMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const cctvMarkersRef = useRef<maplibregl.Marker[]>([]);
@@ -260,11 +262,21 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     const load = async () => {
       const data = await fetchEarthquakes();
       setEarthquakes(data);
+      // Notify on significant earthquakes
+      const significant = data.filter(e => e.magnitude >= 5.5);
+      if (significant.length > 0 && onToast) {
+        onToast({
+          type: 'warning',
+          title: `EARTHQUAKE ALERT`,
+          message: `M${significant[0].magnitude} detected near ${significant[0].place}`,
+          duration: 8000,
+        });
+      }
     };
     load();
     const interval = setInterval(load, 60000);
     return () => clearInterval(interval);
-  }, [activeLayers]);
+  }, [activeLayers, onToast]);
 
   // Fetch military aircraft
   useEffect(() => {
@@ -272,11 +284,19 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     const load = async () => {
       const data = await fetchMilitaryAircraft();
       setAircraft(data);
+      if (data.length > 0 && onToast) {
+        onToast({
+          type: 'info',
+          title: `MIL AIR TRACKING`,
+          message: `${data.length} military aircraft active`,
+          duration: 4000,
+        });
+      }
     };
     load();
     const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
-  }, [activeLayers]);
+  }, [activeLayers, onToast]);
 
   // Fetch air quality
   useEffect(() => {
@@ -322,11 +342,19 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     const load = async () => {
       const data = await fetchVessels();
       setVessels(data);
+      if (onToast) {
+        onToast({
+          type: 'info',
+          title: `NAVAL TRAFFIC`,
+          message: `${data.length} vessels tracked`,
+          duration: 4000,
+        });
+      }
     };
     load();
     const interval = setInterval(load, 30000);
     return () => clearInterval(interval);
-  }, [activeLayers]);
+  }, [activeLayers, onToast]);
 
   // Fetch weather alerts
   useEffect(() => {
@@ -358,11 +386,19 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     const load = async () => {
       const data = await fetchCommercialFlights();
       setCommercialFlights(data);
+      if (data.length > 0 && onToast) {
+        onToast({
+          type: 'info',
+          title: `COMMERCIAL AIR`,
+          message: `${data.length} flights tracked`,
+          duration: 4000,
+        });
+      }
     };
     load();
     const interval = setInterval(load, 60000);
     return () => clearInterval(interval);
-  }, [activeLayers]);
+  }, [activeLayers, onToast]);
 
   // --- MARKER UPDATERS ---
 
