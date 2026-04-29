@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { AlertCircle, RefreshCw, LogOut, Layers, Eye, EyeOff, RotateCcw } from 'lucide-react'
 import SearchBar from '@/components/panels/SearchBar'
 import KeyboardShortcuts from '@/components/panels/KeyboardShortcuts'
@@ -33,16 +33,63 @@ export default function DashboardPage() {
   const [refreshKey, setRefreshKey] = useState(0)
   const { toasts, addToast, dismissToast } = useToasts()
 
-  // Initialize layer states
+  // Initialize layer states from URL or defaults
   const [activeLayers, setActiveLayers] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {}
     layerConfigs.forEach(l => { initial[l.id] = l.defaultOn })
+    // Override from URL
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const layersParam = params.get('layers')
+      if (layersParam) {
+        const enabled = new Set(layersParam.split(','))
+        layerConfigs.forEach(l => { initial[l.id] = enabled.has(l.id) })
+      }
+      const modeParam = params.get('mode') as VisualMode | null
+      if (modeParam && ['DEFAULT', 'SATELLITE', 'FLIR', 'NVG', 'CRT'].includes(modeParam)) {
+        // We'll set this in an effect since state initializer can't reference other state
+      }
+    }
     return initial
   })
+
+  // Read visual mode from URL on mount
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const modeParam = params.get('mode') as VisualMode | null
+    if (modeParam && ['DEFAULT', 'SATELLITE', 'FLIR', 'NVG', 'CRT'].includes(modeParam)) {
+      setVisualMode(modeParam)
+    }
+  }, [])
 
   const toggleLayer = useCallback((id: string) => {
     setActiveLayers(prev => ({ ...prev, [id]: !prev[id] }))
   }, [])
+
+  // Persist state to URL (debounced)
+  const urlTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    if (urlTimeoutRef.current) clearTimeout(urlTimeoutRef.current)
+    urlTimeoutRef.current = setTimeout(() => {
+      const params = new URLSearchParams(window.location.search)
+      const enabled = Object.entries(activeLayers).filter(([, v]) => v).map(([k]) => k)
+      if (enabled.length > 0) {
+        params.set('layers', enabled.join(','))
+      } else {
+        params.delete('layers')
+      }
+      if (visualMode !== 'DEFAULT') {
+        params.set('mode', visualMode)
+      } else {
+        params.delete('mode')
+      }
+      const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`
+      window.history.replaceState({}, '', newUrl)
+    }, 300)
+    return () => {
+      if (urlTimeoutRef.current) clearTimeout(urlTimeoutRef.current)
+    }
+  }, [activeLayers, visualMode])
 
   useEffect(() => {
     const checkAuth = async () => {
