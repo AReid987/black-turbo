@@ -334,3 +334,43 @@ html {
 :focus:not(:focus-visible) {
   outline: none;
 }
+
+/* === MAPLIBRE CUSTOM STYLES === */
+.maplibregl-map {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.maplibregl-popup-content {
+  background: #000 !important;
+  border: 1px solid #22c55e !important;
+  border-radius: 4px !important;
+  padding: 0 !important;
+  color: #22c55e;
+}
+
+.maplibregl-popup-tip {
+  border-top-color: #22c55e !important;
+}
+
+/* Custom scrollbar for dark theme */
+.dark-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dark-scrollbar::-webkit-scrollbar-track {
+  background: #000;
+}
+
+.dark-scrollbar::-webkit-scrollbar-thumb {
+  background: #1f2937;
+  border-radius: 3px;
+}
+
+.dark-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #374151;
+}
+
+/* CCTV marker hover */
+.cctv-marker:hover div {
+  transform: scale(1.4);
+}

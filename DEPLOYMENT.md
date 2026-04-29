@@ -38,8 +38,8 @@ Set these in **GitHub Secrets** (for CI/CD) or **Vercel Dashboard**:
 | `RATE_LIMIT_MAX` | Max auth attempts (default: `5`) |
 | `RATE_LIMIT_WINDOW` | Rate limit window in ms (default: `900000`) |
 | `VERCEL_TOKEN` | Vercel API token |
-| `VERCEL_ORG_ID` | Vercel organization ID |
-| `VERCEL_PROJECT_ID` | Vercel project ID |
+| `VERCEL_ORG_ID` | Vercel organization ID (`team_DE0eCny4qE63Df3PfvvH4cCR`) |
+| `VERCEL_PROJECT_ID` | Vercel project ID (`prj_INQCJ4C9kwIHMZJfaeltTlx3TDbh`) |
 
 ### Deploy via GitHub Actions
 
@@ -47,12 +47,22 @@ Pushes to `main` auto-deploy to production via `.github/workflows/deploy-vercel.
 
 Preview deployments run on pull requests.
 
+### Project Details
+
+- **Vercel Team**: `aigency0`
+- **Project Name**: `subterfuge-shadowbroker`
+- **Production URL**: https://subterfuge-shadowbroker-524m9kmf7-aigency0.vercel.app
+- **Org ID**: `team_DE0eCny4qE63Df3PfvvH4cCR`
+- **Project ID**: `prj_INQCJ4C9kwIHMZJfaeltTlx3TDbh`
+
 ### Manual Deploy
 
 ```bash
 npm i -g vercel
 vercel --prod
 ```
+
+> **Note**: Vercel Deployment Protection is enabled for this team project. You may need to disable it in the Vercel dashboard (Settings → Deployment Protection) or use a bypass token for public access.
 
 ---
 

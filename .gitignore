@@ -73,3 +73,5 @@ target/
 vendor/
 coverage/
 .cache/
+.gsd/
+.claude-flow/
