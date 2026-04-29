@@ -20,6 +20,8 @@ import { trains, getTrainColor, type Train } from '@/lib/data/trains';
 import { gpsJammingZones, getJammingColor, type GpsJammingZone } from '@/lib/data/gpsJamming';
 import { internetOutages, getOutageColor, type InternetOutage } from '@/lib/data/outages';
 import { radioStations, getRadioColor, type RadioStation } from '@/lib/data/radios';
+import { carrierGroups, getCarrierColor, type CarrierGroup } from '@/lib/data/carriers';
+import { meshNodes, getMeshColor, type MeshNode } from '@/lib/data/mesh';
 import { CctvViewer } from '@/components/panels/CctvViewer';
 import DossierPanel from '@/components/panels/DossierPanel';
 
@@ -129,6 +131,8 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   const jammingMarkersRef = useRef<maplibregl.Marker[]>([]);
   const outageMarkersRef = useRef<maplibregl.Marker[]>([]);
   const radioMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const carrierMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const meshMarkersRef = useRef<maplibregl.Marker[]>([]);
   const [selectedCamera, setSelectedCamera] = useState<CctvCamera | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [dossierPos, setDossierPos] = useState<{ lat: number; lng: number } | null>(null);
@@ -147,6 +151,8 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   const [jammingZones] = useState<GpsJammingZone[]>(gpsJammingZones);
   const [outageList] = useState<InternetOutage[]>(internetOutages);
   const [radioList] = useState<RadioStation[]>(radioStations);
+  const [carrierList] = useState<CarrierGroup[]>(carrierGroups);
+  const [meshList] = useState<MeshNode[]>(meshNodes);
 
   // Initialize map
   useEffect(() => {
@@ -761,6 +767,53 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     });
   }, [activeLayers, radioList]);
 
+  const updateCarrierMarkers = useCallback(() => {
+    if (!map.current) return;
+    carrierMarkersRef.current.forEach(m => m.remove());
+    carrierMarkersRef.current = [];
+    if (!activeLayers['carriers']) return;
+
+    carrierList.forEach((c) => {
+      const color = getCarrierColor(c.status);
+      const el = document.createElement('div');
+      // Carrier icon — larger diamond
+      el.innerHTML = `<div style="width:14px;height:14px;background:${color};border:2px solid #000;transform:rotate(45deg);box-shadow:0 0 8px ${color};cursor:pointer;"></div>`;
+      el.style.cursor = 'pointer';
+
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([c.lng, c.lat]).addTo(map.current!);
+      const escorts = c.escorts.length > 0 ? `<br/>Escorts: ${c.escorts.slice(0, 3).join(', ')}${c.escorts.length > 3 ? '...' : ''}` : '';
+      const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 })
+        .setHTML(`<div style="font-family:monospace;font-size:11px;color:${color};background:#000;padding:4px 8px;border:1px solid ${color};max-width:260px;"><strong>${c.name}</strong><br/><span style="color:#888">${c.flagship}<br/>${c.type}<br/>${c.country} • ${c.region}<br/>Status: ${c.status.toUpperCase()}${escorts}</span></div>`);
+      el.addEventListener('mouseenter', () => popup.setLngLat([c.lng, c.lat]).addTo(map.current!));
+      el.addEventListener('mouseleave', () => popup.remove());
+
+      carrierMarkersRef.current.push(marker);
+    });
+  }, [activeLayers, carrierList]);
+
+  const updateMeshMarkers = useCallback(() => {
+    if (!map.current) return;
+    meshMarkersRef.current.forEach(m => m.remove());
+    meshMarkersRef.current = [];
+    if (!activeLayers['mesh']) return;
+
+    meshList.forEach((n) => {
+      const color = getMeshColor(n.type, n.status);
+      const el = document.createElement('div');
+      // Hexagon for mesh
+      el.innerHTML = `<div style="width:8px;height:8px;background:${color};border:1.5px solid #000;clip-path:polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);box-shadow:0 0 4px ${color};cursor:pointer;"></div>`;
+      el.style.cursor = 'pointer';
+
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([n.lng, n.lat]).addTo(map.current!);
+      const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 })
+        .setHTML(`<div style="font-family:monospace;font-size:10px;color:${color};background:#000;padding:4px 8px;border:1px solid ${color};max-width:200px;"><strong>${n.name}</strong><br/><span style="color:#888">${n.type}<br/>Network: ${n.network}<br/>Protocol: ${n.protocol}<br/>Status: ${n.status.toUpperCase()}${n.range ? `<br/>Range: ${n.range}km` : ''}</span></div>`);
+      el.addEventListener('mouseenter', () => popup.setLngLat([n.lng, n.lat]).addTo(map.current!));
+      el.addEventListener('mouseleave', () => popup.remove());
+
+      meshMarkersRef.current.push(marker);
+    });
+  }, [activeLayers, meshList]);
+
   // Apply all marker updates
   useEffect(() => { if (mapLoaded) updateCctvMarkers(); }, [mapLoaded, activeLayers, cctvList, updateCctvMarkers]);
   useEffect(() => { if (mapLoaded) updateEqMarkers(); }, [mapLoaded, activeLayers, earthquakes, updateEqMarkers]);
@@ -779,6 +832,8 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   useEffect(() => { if (mapLoaded) updateJammingMarkers(); }, [mapLoaded, activeLayers, jammingZones, updateJammingMarkers]);
   useEffect(() => { if (mapLoaded) updateOutageMarkers(); }, [mapLoaded, activeLayers, outageList, updateOutageMarkers]);
   useEffect(() => { if (mapLoaded) updateRadioMarkers(); }, [mapLoaded, activeLayers, radioList, updateRadioMarkers]);
+  useEffect(() => { if (mapLoaded) updateCarrierMarkers(); }, [mapLoaded, activeLayers, carrierList, updateCarrierMarkers]);
+  useEffect(() => { if (mapLoaded) updateMeshMarkers(); }, [mapLoaded, activeLayers, meshList, updateMeshMarkers]);
 
   const filterStyle = getModeFilter(visualMode);
 
