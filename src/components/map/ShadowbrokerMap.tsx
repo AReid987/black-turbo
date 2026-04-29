@@ -137,6 +137,7 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   const [mapLoaded, setMapLoaded] = useState(false);
   const [dossierPos, setDossierPos] = useState<{ lat: number; lng: number } | null>(null);
   const [mapZoom, setMapZoom] = useState(1.5);
+  const [mousePos, setMousePos] = useState<{ lat: number; lng: number } | null>(null);
   const [earthquakes, setEarthquakes] = useState<EarthquakeFeature[]>([]);
   const [aircraft, setAircraft] = useState<Aircraft[]>([]);
   const [airQuality, setAirQuality] = useState<AirQualityStation[]>([]);
@@ -196,6 +197,14 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
 
     instance.on('zoom', () => {
       setMapZoom(instance.getZoom());
+    });
+
+    instance.on('mousemove', (e) => {
+      setMousePos({ lat: e.lngLat.lat, lng: e.lngLat.lng });
+    });
+
+    instance.on('mouseout', () => {
+      setMousePos(null);
     });
 
     instance.on('load', () => {
@@ -890,6 +899,15 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
 
       {dossierPos && (
         <DossierPanel lat={dossierPos.lat} lng={dossierPos.lng} onClose={() => setDossierPos(null)} />
+      )}
+
+      {/* Mouse coordinate tracker */}
+      {mousePos && (
+        <div className="absolute bottom-8 left-4 z-20 bg-black/80 border border-green-500/20 rounded px-2 py-1 pointer-events-none">
+          <span className="text-[10px] font-mono text-green-500/60">
+            {mousePos.lat.toFixed(4)}°, {mousePos.lng.toFixed(4)}°
+          </span>
+        </div>
       )}
     </div>
   );
