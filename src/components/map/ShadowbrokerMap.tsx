@@ -136,6 +136,7 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   const [selectedCamera, setSelectedCamera] = useState<CctvCamera | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [dossierPos, setDossierPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [mapZoom, setMapZoom] = useState(1.5);
   const [earthquakes, setEarthquakes] = useState<EarthquakeFeature[]>([]);
   const [aircraft, setAircraft] = useState<Aircraft[]>([]);
   const [airQuality, setAirQuality] = useState<AirQualityStation[]>([]);
@@ -155,6 +156,21 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   const [meshList] = useState<MeshNode[]>(meshNodes);
 
   // Initialize map
+  // Expose flyTo for external search integration
+  useEffect(() => {
+    (window as any).__shadowbrokerFlyTo = ({ lat, lng, name }: { lat: number; lng: number; name: string }) => {
+      if (!map.current) return;
+      map.current.flyTo({ center: [lng, lat], zoom: 12, duration: 1500 });
+      // Show a brief notification or set dossier
+      setDossierPos({ lat, lng });
+      setSelectedCamera(null);
+      if (onCameraSelect) onCameraSelect(null);
+    };
+    return () => {
+      delete (window as any).__shadowbrokerFlyTo;
+    };
+  }, [onCameraSelect]);
+
   useEffect(() => {
     if (!mapContainer.current || map.current) return;
 
@@ -176,6 +192,10 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
       setDossierPos({ lat: e.lngLat.lat, lng: e.lngLat.lng });
       setSelectedCamera(null);
       if (onCameraSelect) onCameraSelect(null);
+    });
+
+    instance.on('zoom', () => {
+      setMapZoom(instance.getZoom());
     });
 
     instance.on('load', () => {
@@ -343,9 +363,21 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     cctvMarkersRef.current = [];
     if (!activeLayers['cctv']) return;
 
+    // Skip rendering if zoomed out too far — too many markers kills performance
+    const zoom = map.current.getZoom();
+    const isZoomedOut = zoom < 9;
+
     cctvList.forEach((cam) => {
+      // When zoomed out, only show a subset of cameras (spaced out)
+      if (isZoomedOut) {
+        // Simple spatial filter: only show every 20th camera to avoid clutter
+        const hash = cam.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
+        if (hash % 20 !== 0) return;
+      }
+
       const el = document.createElement('div');
-      el.innerHTML = `<div style="width:14px;height:14px;background:#22c55e;border:2px solid #000;border-radius:50%;box-shadow:0 0 8px #22c55e;cursor:pointer;transition:transform 0.2s;"></div>`;
+      const size = isZoomedOut ? 8 : 14;
+      el.innerHTML = `<div style="width:${size}px;height:${size}px;background:#22c55e;border:2px solid #000;border-radius:50%;box-shadow:0 0 8px #22c55e;cursor:pointer;transition:transform 0.2s;"></div>`;
       el.style.cursor = 'pointer';
 
       const marker = new maplibregl.Marker({ element: el }).setLngLat([cam.lng, cam.lat]).addTo(map.current!);
