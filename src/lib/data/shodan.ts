@@ -1,4 +1,5 @@
 import { fetchWithRetry } from '@/lib/utils/fetchWithRetry';
+import { getCache, setCache } from '@/lib/utils/dataCache';
 
 export interface ShodanHost {
   ip_str: string;
@@ -34,7 +35,7 @@ export async function searchShodan(query: string = 'webcam'): Promise<ShodanSear
   const res = await fetchWithRetry(`/api/proxy/shodan?q=${encodeURIComponent(query)}`, { retries: 1, timeout: 8000 });
   if (!res.ok) throw new Error(`Shodan error: ${res.status}`);
   const data = await res.json();
-  return {
+  const result = {
     total: data.total || 0,
     matches: (data.matches || []).map((m: any) => ({
       ip_str: m.ip_str,
@@ -52,6 +53,8 @@ export async function searchShodan(query: string = 'webcam'): Promise<ShodanSear
       vulns: m.vulns ? Object.keys(m.vulns) : undefined,
     })).filter((h: ShodanHost) => h.latitude && h.longitude),
   };
+  setCache(`shodan_${query}`, result);
+  return result;
 }
 
 export function getShodanColor(ports: number[]): string {

@@ -1,4 +1,5 @@
 import { fetchWithRetry } from '@/lib/utils/fetchWithRetry';
+import { getCache, setCache } from '@/lib/utils/dataCache';
 
 export interface CommercialFlight {
   callsign: string;
@@ -63,9 +64,14 @@ export async function fetchCommercialFlights(): Promise<CommercialFlight[]> {
     }
   }
 
-  // If API fails entirely, return sample data
+  // Cache successful results
+  if (allFlights.length > 0) {
+    setCache('commercial_flights', allFlights.slice(0, 150));
+  }
+
+  // If API fails entirely, return cached or sample data
   if (allFlights.length === 0) {
-    return getSampleFlights();
+    return getCache<CommercialFlight[]>('commercial_flights') || getSampleFlights();
   }
 
   return allFlights.slice(0, 150);

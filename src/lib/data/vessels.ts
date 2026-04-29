@@ -1,4 +1,5 @@
 import { fetchWithRetry } from '@/lib/utils/fetchWithRetry';
+import { getCache, setCache } from '@/lib/utils/dataCache';
 
 export interface Vessel {
   mmsi: number;
@@ -27,7 +28,7 @@ export async function fetchVessels(): Promise<Vessel[]> {
     );
     if (res.ok) {
       const data = await res.json();
-      return (data.messages || []).map((m: any) => ({
+      const result = (data.messages || []).map((m: any) => ({
         mmsi: m.MMSI || m.mmsi,
         name: m.Name || m.name || 'UNKNOWN',
         lat: m.Latitude || m.latitude,
@@ -39,10 +40,15 @@ export async function fetchVessels(): Promise<Vessel[]> {
         destination: m.Destination || m.destination,
         eta: m.Eta || m.eta,
       })).filter((v: Vessel) => v.lat && v.lng);
+      setCache('vessels', result);
+      return result;
     }
   } catch (e) {
-    // Fallback to static sample data for demo
+    // Fallback to cached or static sample data for demo
   }
+
+  const cached = getCache<Vessel[]>('vessels');
+  if (cached && cached.length > 0) return cached;
 
   // Fallback: Realistic vessel positions around major ports
   return [

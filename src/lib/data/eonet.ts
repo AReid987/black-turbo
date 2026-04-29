@@ -1,4 +1,5 @@
 import { fetchWithRetry } from '@/lib/utils/fetchWithRetry';
+import { getCache, setCache } from '@/lib/utils/dataCache';
 
 export interface EonetEvent {
   id: string;
@@ -20,7 +21,7 @@ export async function fetchEonetEvents(categories?: string[]): Promise<EonetEven
     if (!res.ok) throw new Error(`EONET error: ${res.status}`);
     const data = await res.json();
 
-    return (data.events || []).map((e: any) => {
+    const result = (data.events || []).map((e: any) => {
       const geo = e.geometry?.[0];
       return {
         id: e.id,
@@ -32,9 +33,11 @@ export async function fetchEonetEvents(categories?: string[]): Promise<EonetEven
         link: e.sources?.[0]?.url,
       };
     }).filter((e: EonetEvent) => e.lat && e.lng);
+    setCache('eonet', result);
+    return result;
   } catch (err) {
     console.error('Failed to fetch EONET events:', err);
-    return [];
+    return getCache<EonetEvent[]>('eonet') || [];
   }
 }
 

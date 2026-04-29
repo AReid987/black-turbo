@@ -1,4 +1,5 @@
 import { fetchWithRetry } from '@/lib/utils/fetchWithRetry';
+import { getCache, setCache } from '@/lib/utils/dataCache';
 
 export interface AirQualityStation {
   id: string;
@@ -23,7 +24,7 @@ export async function fetchAirQuality(): Promise<AirQualityStation[]> {
     if (!res.ok) throw new Error(`OpenAQ error: ${res.status}`);
     const data = await res.json();
 
-    return (data.results || []).map((r: any) => ({
+    const result = (data.results || []).map((r: any) => ({
       id: r.location,
       lat: r.coordinates?.latitude,
       lng: r.coordinates?.longitude,
@@ -35,9 +36,11 @@ export async function fetchAirQuality(): Promise<AirQualityStation[]> {
       o3: r.measurements?.find((m: any) => m.parameter === 'o3')?.value,
       lastUpdated: r.measurements?.[0]?.lastUpdated,
     })).filter((s: AirQualityStation) => s.lat && s.lng && s.pm25 !== undefined);
+    setCache('air_quality', result);
+    return result;
   } catch (err) {
     console.error('Failed to fetch air quality:', err);
-    return [];
+    return getCache<AirQualityStation[]>('air_quality') || [];
   }
 }
 

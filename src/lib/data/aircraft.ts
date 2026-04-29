@@ -11,13 +11,14 @@ export interface Aircraft {
 }
 
 import { fetchWithRetry } from '@/lib/utils/fetchWithRetry';
+import { getCache, setCache } from '@/lib/utils/dataCache';
 
 export async function fetchMilitaryAircraft(): Promise<Aircraft[]> {
   try {
     const res = await fetchWithRetry('https://api.adsb.lol/v2/mil', { cache: 'no-store', retries: 2, timeout: 8000 });
     const data = await res.json();
 
-    return (data.ac || []).map((ac: any) => ({
+    const result = (data.ac || []).map((ac: any) => ({
       hex: ac.hex,
       lat: ac.lat,
       lng: ac.lon,
@@ -28,8 +29,10 @@ export async function fetchMilitaryAircraft(): Promise<Aircraft[]> {
       type: ac.t,
       category: ac.category,
     })).filter((ac: Aircraft) => ac.lat && ac.lng);
+    setCache('military_aircraft', result);
+    return result;
   } catch (err) {
     console.error('Failed to fetch aircraft:', err);
-    return [];
+    return getCache<Aircraft[]>('military_aircraft') || [];
   }
 }

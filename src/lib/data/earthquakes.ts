@@ -1,4 +1,5 @@
 import { fetchWithRetry } from '@/lib/utils/fetchWithRetry';
+import { getCache, setCache } from '@/lib/utils/dataCache';
 
 export interface EarthquakeFeature {
   id: string;
@@ -20,7 +21,7 @@ export async function fetchEarthquakes(): Promise<EarthquakeFeature[]> {
     if (!res.ok) throw new Error(`USGS error: ${res.status}`);
     const data = await res.json();
 
-    return data.features.map((f: any) => ({
+    const result = data.features.map((f: any) => ({
       id: f.id,
       lat: f.geometry.coordinates[1],
       lng: f.geometry.coordinates[0],
@@ -30,9 +31,11 @@ export async function fetchEarthquakes(): Promise<EarthquakeFeature[]> {
       depth: f.properties.depth,
       url: f.properties.url,
     }));
+    setCache('earthquakes', result);
+    return result;
   } catch (err) {
     console.error('Failed to fetch earthquakes:', err);
-    return [];
+    return getCache<EarthquakeFeature[]>('earthquakes') || [];
   }
 }
 

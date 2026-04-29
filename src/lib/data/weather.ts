@@ -1,3 +1,5 @@
+import { getCache, setCache } from '@/lib/utils/dataCache';
+
 export interface WeatherAlert {
   lat: number;
   lng: number;
