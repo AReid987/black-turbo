@@ -13,6 +13,8 @@ import { searchShodan, getShodanColor, type ShodanHost } from '@/lib/data/shodan
 import { fetchVessels, getVesselColor, type Vessel } from '@/lib/data/vessels';
 import { fetchWeatherAlerts, getSeverityColor, type WeatherAlert } from '@/lib/data/weather';
 import { fetchFireHotspots, getFireColor, getFireSize, type FireHotspot } from '@/lib/data/fires';
+import { conflictZones, getConflictColor, getConflictSize, type ConflictZone } from '@/lib/data/conflicts';
+import { satellites, getSatelliteColor, type Satellite } from '@/lib/data/satellites';
 import { CctvViewer } from '@/components/panels/CctvViewer';
 import DossierPanel from '@/components/panels/DossierPanel';
 
@@ -115,6 +117,8 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   const vesselMarkersRef = useRef<maplibregl.Marker[]>([]);
   const weatherMarkersRef = useRef<maplibregl.Marker[]>([]);
   const fireMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const conflictMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const satelliteMarkersRef = useRef<maplibregl.Marker[]>([]);
   const [selectedCamera, setSelectedCamera] = useState<CctvCamera | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [dossierPos, setDossierPos] = useState<{ lat: number; lng: number } | null>(null);
@@ -126,6 +130,8 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   const [vessels, setVessels] = useState<Vessel[]>([]);
   const [weatherAlerts, setWeatherAlerts] = useState<WeatherAlert[]>([]);
   const [fireHotspots, setFireHotspots] = useState<FireHotspot[]>([]);
+  const [conflictList] = useState<ConflictZone[]>(conflictZones);
+  const [satelliteList] = useState<Satellite[]>(satellites);
 
   // Initialize map
   useEffect(() => {
@@ -557,6 +563,57 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     });
   }, [activeLayers, fireHotspots]);
 
+  const updateConflictMarkers = useCallback(() => {
+    if (!map.current) return;
+    conflictMarkersRef.current.forEach(m => m.remove());
+    conflictMarkersRef.current = [];
+    if (!activeLayers['conflict']) return;
+
+    conflictList.forEach((c) => {
+      const color = getConflictColor(c.intensity);
+      const size = getConflictSize(c.intensity);
+      const el = document.createElement('div');
+      // Cross/X shape for conflict
+      el.innerHTML = `<div style="width:${size}px;height:${size}px;position:relative;cursor:pointer;">
+        <div style="position:absolute;top:50%;left:0;width:100%;height:2px;background:${color};transform:translateY(-50%) rotate(45deg);box-shadow:0 0 4px ${color};"></div>
+        <div style="position:absolute;top:50%;left:0;width:100%;height:2px;background:${color};transform:translateY(-50%) rotate(-45deg);box-shadow:0 0 4px ${color};"></div>
+      </div>`;
+      el.style.cursor = 'pointer';
+
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([c.lng, c.lat]).addTo(map.current!);
+      const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 })
+        .setHTML(`<div style="font-family:monospace;font-size:11px;color:${color};background:#000;padding:4px 8px;border:1px solid ${color};max-width:220px;"><strong>${c.name.toUpperCase()}</strong><br/><span style="color:#888">${c.type}<br/>${c.description}<br/>Intensity: ${c.intensity.toUpperCase()}<br/>Since: ${c.since}<br/>${c.casualties ? `Casualties: ${c.casualties}` : ''}</span></div>`);
+      el.addEventListener('mouseenter', () => popup.setLngLat([c.lng, c.lat]).addTo(map.current!));
+      el.addEventListener('mouseleave', () => popup.remove());
+
+      conflictMarkersRef.current.push(marker);
+    });
+  }, [activeLayers, conflictList]);
+
+  const updateSatelliteMarkers = useCallback(() => {
+    if (!map.current) return;
+    satelliteMarkersRef.current.forEach(m => m.remove());
+    satelliteMarkersRef.current = [];
+    if (!activeLayers['satellites']) return;
+
+    satelliteList.forEach((s) => {
+      const color = getSatelliteColor(s.type);
+      const el = document.createElement('div');
+      // Diamond shape for satellite
+      el.innerHTML = `<div style="width:8px;height:8px;background:${color};border:1.5px solid #000;transform:rotate(45deg);box-shadow:0 0 4px ${color};cursor:pointer;"></div>`;
+      el.style.cursor = 'pointer';
+
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([s.lng, s.lat]).addTo(map.current!);
+      const orbitType = s.altitude > 30000 ? 'GEO' : s.altitude > 1000 ? 'MEO' : 'LEO';
+      const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 })
+        .setHTML(`<div style="font-family:monospace;font-size:10px;color:${color};background:#000;padding:4px 8px;border:1px solid ${color};max-width:200px;"><strong>${s.name}</strong><br/><span style="color:#888">NORAD: ${s.noradId}<br/>${s.type}<br/>${s.operator}<br/>Alt: ${s.altitude.toLocaleString()}km (${orbitType})<br/>Launch: ${s.launchYear}</span></div>`);
+      el.addEventListener('mouseenter', () => popup.setLngLat([s.lng, s.lat]).addTo(map.current!));
+      el.addEventListener('mouseleave', () => popup.remove());
+
+      satelliteMarkersRef.current.push(marker);
+    });
+  }, [activeLayers, satelliteList]);
+
   // Apply all marker updates
   useEffect(() => { if (mapLoaded) updateCctvMarkers(); }, [mapLoaded, activeLayers, cctvList, updateCctvMarkers]);
   useEffect(() => { if (mapLoaded) updateEqMarkers(); }, [mapLoaded, activeLayers, earthquakes, updateEqMarkers]);
@@ -568,6 +625,8 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   useEffect(() => { if (mapLoaded) updateVesselMarkers(); }, [mapLoaded, activeLayers, vessels, updateVesselMarkers]);
   useEffect(() => { if (mapLoaded) updateWeatherMarkers(); }, [mapLoaded, activeLayers, weatherAlerts, updateWeatherMarkers]);
   useEffect(() => { if (mapLoaded) updateFireMarkers(); }, [mapLoaded, activeLayers, fireHotspots, updateFireMarkers]);
+  useEffect(() => { if (mapLoaded) updateConflictMarkers(); }, [mapLoaded, activeLayers, conflictList, updateConflictMarkers]);
+  useEffect(() => { if (mapLoaded) updateSatelliteMarkers(); }, [mapLoaded, activeLayers, satelliteList, updateSatelliteMarkers]);
 
   const filterStyle = getModeFilter(visualMode);
 
