@@ -11,6 +11,8 @@ import { volcanoes } from '@/lib/data/volcanoes';
 import { militaryBases, powerPlants, dataCenters } from '@/lib/data/infrastructure';
 import { searchShodan, getShodanColor, type ShodanHost } from '@/lib/data/shodan';
 import { fetchVessels, getVesselColor, type Vessel } from '@/lib/data/vessels';
+import { fetchWeatherAlerts, getSeverityColor, type WeatherAlert } from '@/lib/data/weather';
+import { fetchFireHotspots, getFireColor, getFireSize, type FireHotspot } from '@/lib/data/fires';
 import { CctvViewer } from '@/components/panels/CctvViewer';
 import DossierPanel from '@/components/panels/DossierPanel';
 
@@ -111,6 +113,8 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   const aqMarkersRef = useRef<maplibregl.Marker[]>([]);
   const shodanMarkersRef = useRef<maplibregl.Marker[]>([]);
   const vesselMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const weatherMarkersRef = useRef<maplibregl.Marker[]>([]);
+  const fireMarkersRef = useRef<maplibregl.Marker[]>([]);
   const [selectedCamera, setSelectedCamera] = useState<CctvCamera | null>(null);
   const [mapLoaded, setMapLoaded] = useState(false);
   const [dossierPos, setDossierPos] = useState<{ lat: number; lng: number } | null>(null);
@@ -120,6 +124,8 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   const [cctvList, setCctvList] = useState<CctvCamera[]>(cctvCameras);
   const [shodanHosts, setShodanHosts] = useState<ShodanHost[]>([]);
   const [vessels, setVessels] = useState<Vessel[]>([]);
+  const [weatherAlerts, setWeatherAlerts] = useState<WeatherAlert[]>([]);
+  const [fireHotspots, setFireHotspots] = useState<FireHotspot[]>([]);
 
   // Initialize map
   useEffect(() => {
@@ -263,6 +269,30 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     };
     load();
     const interval = setInterval(load, 30000);
+    return () => clearInterval(interval);
+  }, [activeLayers]);
+
+  // Fetch weather alerts
+  useEffect(() => {
+    if (!activeLayers['weather']) return;
+    const load = async () => {
+      const data = await fetchWeatherAlerts();
+      setWeatherAlerts(data);
+    };
+    load();
+    const interval = setInterval(load, 300000);
+    return () => clearInterval(interval);
+  }, [activeLayers]);
+
+  // Fetch fire hotspots
+  useEffect(() => {
+    if (!activeLayers['fires']) return;
+    const load = async () => {
+      const data = await fetchFireHotspots();
+      setFireHotspots(data);
+    };
+    load();
+    const interval = setInterval(load, 300000);
     return () => clearInterval(interval);
   }, [activeLayers]);
 
@@ -482,6 +512,51 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     });
   }, [activeLayers, vessels]);
 
+  const updateWeatherMarkers = useCallback(() => {
+    if (!map.current) return;
+    weatherMarkersRef.current.forEach(m => m.remove());
+    weatherMarkersRef.current = [];
+    if (!activeLayers['weather']) return;
+
+    weatherAlerts.forEach((w) => {
+      const color = getSeverityColor(w.severity);
+      const el = document.createElement('div');
+      el.innerHTML = `<div style="width:12px;height:12px;background:${color};border:1.5px solid #000;border-radius:50%;box-shadow:0 0 6px ${color};cursor:pointer;opacity:0.9;animation:pulse 2s infinite;"></div>`;
+      el.style.cursor = 'pointer';
+
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([w.lng, w.lat]).addTo(map.current!);
+      const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 })
+        .setHTML(`<div style="font-family:monospace;font-size:11px;color:${color};background:#000;padding:4px 8px;border:1px solid ${color};max-width:200px;"><strong>${w.event.toUpperCase()}</strong><br/><span style="color:#888">${w.area}<br/>${w.description}<br/>Severity: ${w.severity.toUpperCase()}</span></div>`);
+      el.addEventListener('mouseenter', () => popup.setLngLat([w.lng, w.lat]).addTo(map.current!));
+      el.addEventListener('mouseleave', () => popup.remove());
+
+      weatherMarkersRef.current.push(marker);
+    });
+  }, [activeLayers, weatherAlerts]);
+
+  const updateFireMarkers = useCallback(() => {
+    if (!map.current) return;
+    fireMarkersRef.current.forEach(m => m.remove());
+    fireMarkersRef.current = [];
+    if (!activeLayers['fires']) return;
+
+    fireHotspots.forEach((f) => {
+      const color = getFireColor(f.intensity);
+      const size = getFireSize(f.intensity);
+      const el = document.createElement('div');
+      el.innerHTML = `<div style="width:${size}px;height:${size}px;background:${color};border:1.5px solid #000;border-radius:50%;box-shadow:0 0 8px ${color};cursor:pointer;opacity:0.85;"></div>`;
+      el.style.cursor = 'pointer';
+
+      const marker = new maplibregl.Marker({ element: el }).setLngLat([f.lng, f.lat]).addTo(map.current!);
+      const popup = new maplibregl.Popup({ closeButton: false, closeOnClick: false, offset: 10 })
+        .setHTML(`<div style="font-family:monospace;font-size:10px;color:${color};background:#000;padding:4px 8px;border:1px solid ${color};max-width:200px;"><strong>FIRE HOTSPOT</strong><br/><span style="color:#888">Intensity: ${f.intensity}/10<br/>Confidence: ${f.confidence}<br/>Satellite: ${f.satellite}<br/>${new Date(f.time).toISOString().slice(0, 19)} UTC</span></div>`);
+      el.addEventListener('mouseenter', () => popup.setLngLat([f.lng, f.lat]).addTo(map.current!));
+      el.addEventListener('mouseleave', () => popup.remove());
+
+      fireMarkersRef.current.push(marker);
+    });
+  }, [activeLayers, fireHotspots]);
+
   // Apply all marker updates
   useEffect(() => { if (mapLoaded) updateCctvMarkers(); }, [mapLoaded, activeLayers, cctvList, updateCctvMarkers]);
   useEffect(() => { if (mapLoaded) updateEqMarkers(); }, [mapLoaded, activeLayers, earthquakes, updateEqMarkers]);
@@ -491,6 +566,8 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   useEffect(() => { if (mapLoaded) updateAqMarkers(); }, [mapLoaded, activeLayers, airQuality, updateAqMarkers]);
   useEffect(() => { if (mapLoaded) updateShodanMarkers(); }, [mapLoaded, activeLayers, shodanHosts, updateShodanMarkers]);
   useEffect(() => { if (mapLoaded) updateVesselMarkers(); }, [mapLoaded, activeLayers, vessels, updateVesselMarkers]);
+  useEffect(() => { if (mapLoaded) updateWeatherMarkers(); }, [mapLoaded, activeLayers, weatherAlerts, updateWeatherMarkers]);
+  useEffect(() => { if (mapLoaded) updateFireMarkers(); }, [mapLoaded, activeLayers, fireHotspots, updateFireMarkers]);
 
   const filterStyle = getModeFilter(visualMode);
 
