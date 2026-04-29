@@ -7,7 +7,7 @@ import KeyboardShortcuts from '@/components/panels/KeyboardShortcuts'
 import dynamic from 'next/dynamic'
 import LayerPanel, { layers as layerConfigs } from '@/components/panels/LayerPanel'
 import VisualModeSelector from '@/components/panels/VisualModeSelector'
-import type { VisualMode, HealthMap } from '@/components/map/ShadowbrokerMap'
+import type { VisualMode, HealthMap, LayerStats } from '@/components/map/ShadowbrokerMap'
 import type { CctvCamera } from '@/lib/data/cctv'
 import ToastContainer, { useToasts } from '@/components/ui/Toast'
 
@@ -29,6 +29,7 @@ export default function DashboardPage() {
   const [visualMode, setVisualMode] = useState<VisualMode>('DEFAULT')
   const [activeCamera, setActiveCamera] = useState<CctvCamera | null>(null)
   const [health, setHealth] = useState<HealthMap>({})
+  const [stats, setStats] = useState<LayerStats>({})
   const { toasts, addToast, dismissToast } = useToasts()
 
   // Initialize layer states
@@ -166,6 +167,7 @@ export default function DashboardPage() {
             onCameraSelect={setActiveCamera}
             onToast={addToast}
             onHealthChange={setHealth}
+            onStatsChange={setStats}
           />
 
           <ToastContainer toasts={toasts} onDismiss={dismissToast} />
@@ -183,25 +185,25 @@ export default function DashboardPage() {
               {activeLayers['cctv'] && (
                 <>
                   <span className="text-[10px] font-mono text-gray-600">|</span>
-                  <span className="text-[10px] font-mono text-green-400/80 whitespace-nowrap">882 CAMERAS</span>
+                  <span className="text-[10px] font-mono text-green-400/80 whitespace-nowrap">{stats.cctv ?? '—'} CAMERAS</span>
                 </>
               )}
               {activeLayers['flights_military'] && (
                 <>
                   <span className="text-[10px] font-mono text-gray-600">|</span>
-                  <span className="text-[10px] font-mono text-red-400/80 whitespace-nowrap">MIL AIR</span>
+                  <span className="text-[10px] font-mono text-red-400/80 whitespace-nowrap">{stats.aircraft ?? '—'} MIL AIR</span>
                 </>
               )}
               {activeLayers['flights_commercial'] && (
                 <>
                   <span className="text-[10px] font-mono text-gray-600">|</span>
-                  <span className="text-[10px] font-mono text-blue-400/80 whitespace-nowrap">CIV AIR</span>
+                  <span className="text-[10px] font-mono text-blue-400/80 whitespace-nowrap">{stats.commercialFlights ?? '—'} CIV AIR</span>
                 </>
               )}
               {activeLayers['ships'] && (
                 <>
                   <span className="text-[10px] font-mono text-gray-600">|</span>
-                  <span className="text-[10px] font-mono text-cyan-400/80 whitespace-nowrap">20 VESSELS</span>
+                  <span className="text-[10px] font-mono text-cyan-400/80 whitespace-nowrap">{stats.vessels ?? '—'} VESSELS</span>
                 </>
               )}
               {activeLayers['carriers'] && (
@@ -219,7 +221,7 @@ export default function DashboardPage() {
               {activeLayers['shodan'] && (
                 <>
                   <span className="text-[10px] font-mono text-gray-600">|</span>
-                  <span className="text-[10px] font-mono text-amber-400/80 whitespace-nowrap">SHODAN</span>
+                  <span className="text-[10px] font-mono text-amber-400/80 whitespace-nowrap">{stats.shodan ?? '—'} SHODAN</span>
                 </>
               )}
               {activeCamera && (

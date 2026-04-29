@@ -34,12 +34,25 @@ export interface HealthMap {
   [source: string]: { status: 'online' | 'degraded' | 'offline' | 'unknown'; lastSuccess?: number; lastError?: number };
 }
 
+export interface LayerStats {
+  earthquakes?: number;
+  aircraft?: number;
+  vessels?: number;
+  commercialFlights?: number;
+  airQuality?: number;
+  weatherAlerts?: number;
+  fireHotspots?: number;
+  cctv?: number;
+  shodan?: number;
+}
+
 interface ShadowbrokerMapProps {
   activeLayers: Record<string, boolean>;
   visualMode: VisualMode;
   onCameraSelect?: (camera: CctvCamera | null) => void;
   onToast?: (toast: { type: ToastType; title: string; message?: string; duration?: number }) => void;
   onHealthChange?: (health: HealthMap) => void;
+  onStatsChange?: (stats: LayerStats) => void;
 }
 
 const getSatelliteStyle = (): maplibregl.StyleSpecification => ({
@@ -120,7 +133,7 @@ function createTerminatorGeoJSON(): GeoJSON.Feature<GeoJSON.Polygon> {
   };
 }
 
-export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSelect, onToast, onHealthChange }: ShadowbrokerMapProps) {
+export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSelect, onToast, onHealthChange, onStatsChange }: ShadowbrokerMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<maplibregl.Map | null>(null);
   const cctvMarkersRef = useRef<maplibregl.Marker[]>([]);
@@ -179,6 +192,22 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
       onHealthChange(mapped);
     }
   }, [health, onHealthChange]);
+
+  // Expose live stats to parent whenever data changes
+  useEffect(() => {
+    if (!onStatsChange) return;
+    onStatsChange({
+      earthquakes: earthquakes.length,
+      aircraft: aircraft.length,
+      vessels: vessels.length,
+      commercialFlights: commercialFlights.length,
+      airQuality: airQuality.length,
+      weatherAlerts: weatherAlerts.length,
+      fireHotspots: fireHotspots.length,
+      cctv: cctvList.length,
+      shodan: shodanHosts.length,
+    });
+  }, [earthquakes, aircraft, vessels, commercialFlights, airQuality, weatherAlerts, fireHotspots, cctvList, shodanHosts, onStatsChange]);
 
   // Initialize map
   // Expose flyTo for external search integration
