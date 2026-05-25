@@ -1,0 +1,55 @@
+# shadowbroker-deployment
+
+> LLM-friendly project summary. See llms-full.txt for complete context.
+
+## Project
+
+BLACKTIVISM OSINT Platform — a covert geospatial intelligence dashboard.
+
+## Stack
+
+Next.js 14, React 18, TypeScript 5, Tailwind CSS, MapLibre GL JS, crypto-js, Framer Motion. Deployed on Vercel.
+
+## Architecture Pattern
+
+Dual-identity Next.js app. Public route `/` serves a decoy landing page. Protected route `/dashboard` serves a real-time global OSINT map. Access controlled by AES-encrypted session cookie (`shadow_session`). No database — sessions are stateless tokens.
+
+## Key Files
+
+- `src/middleware.ts` — Edge cookie guard
+- `src/lib/auth.ts` — Authentication primitives (validateKey, createSession, validateSession)
+- `src/lib/rateLimit.ts` — In-memory server-side rate limiter
+- `src/app/api/auth/validate/route.ts` — Key submission API
+- `src/app/api/auth/session/route.ts` — Session validation API
+- `src/app/dashboard/page.tsx` — Tactical display (323 lines)
+- `src/components/map/ShadowbrokerMap.tsx` — MapLibre map engine (53KB)
+- `src/components/panels/LayerPanel.tsx` — 22 intelligence layer toggles
+- `src/components/landing/DecoyLanding.tsx` — Decoy page with hidden auth triggers
+- `src/lib/data/` — 21 data fetcher modules (aircraft, vessels, CCTV, satellites, etc.)
+- `src/lib/utils/fetchWithRetry.ts` — Retry + timeout HTTP wrapper
+- `src/lib/utils/dataCache.ts` — localStorage TTL cache
+- `src/lib/inviteCodes.ts` — In-memory invite code management
+
+## Data Sources
+
+adsb.lol (military + commercial ADS-B), aisstream.io (AIS vessels), USGS (earthquakes), NASA EONET + FIRMS (events + fires), Digitraffic.fi (CCTV cameras), OpenAQ (air quality), Shodan (server-proxied device search). All have static fallbacks.
+
+## Auth Flow
+
+POST /api/auth/validate {key} → constantTimeCompare → AES session token → Set-Cookie shadow_session → /dashboard
+
+## Intelligence Layers (22 total)
+
+Surveillance: CCTV (900+). Aviation: Military aircraft, commercial flights. Maritime: Naval (20), carrier groups (20). Ground: Trains (19). Space: Satellites (24). SIGINT: KiwiSDR (21), APRS mesh (26), GPS jamming (15). Environment: Earthquakes, volcanoes (60), fires, weather, air quality. Infrastructure: Military bases (200+), power plants (500+), data centers (30), outages. Geopolitics: Conflict zones (15). Overlays: Day/night, Shodan.
+
+## Environment Variables
+
+SECRET_KEY, ENCRYPTION_KEY (required). SESSION_DURATION, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW (optional). NEXT_PUBLIC_AISTREAM_API_KEY, SHODAN_API_KEY (optional, API keys).
+
+## Design System
+
+OKLCH void color palette (hue 250 dark surfaces, hue 65 warm amber accents). JetBrains Mono primary font. VT323 display font. Sharp corners (0px radius). Bayer matrix dither on glass surfaces. BLACKTIVISM v0.4.
+
+## Docs
+
+wiki/ directory — VitePress site. ARCHITECTURE.md, DEPLOYMENT.md, QUICK_REF.md in root.

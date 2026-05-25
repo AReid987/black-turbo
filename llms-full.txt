@@ -1,0 +1,239 @@
+# shadowbroker-deployment — Full LLM Context
+
+## Identity
+
+Project name: shadowbroker-deployment
+Internal brand: BLACKTIVISM OSINT
+Version: v0.4 (BLACKTIVISM v0.4)
+Vercel team: aigency0
+Vercel project: subterfuge-shadowbroker
+Repo: https://github.com/AReid987/shadowbroker-deployment
+Branch: main
+
+## What It Is
+
+A covert geospatial intelligence (OSINT) platform built as a Next.js 14 application. It presents a convincing decoy landing page to the public while hiding a real-time global intelligence dashboard behind key-based authentication. No database. No user accounts. Single secret key.
+
+## Technical Stack
+
+- Framework: Next.js 14.0.4 (App Router)
+- Runtime: React 18.2, TypeScript 5.3
+- Styling: Tailwind CSS 3.3, OKLCH design tokens
+- Map: MapLibre GL JS (dynamic import, SSR disabled)
+- Auth: crypto-js 4.2 (AES-256 encryption, SHA-256 hashing)
+- Animation: Framer Motion 10 (decoy page)
+- Icons: Lucide React 0.294
+- Deploy: Vercel (frontend), optional Fly.io (backend)
+
+## Directory Structure
+
+```
+src/
+  app/
+    page.tsx               # Root route → DecoyLanding component
+    layout.tsx             # Root layout: JetBrains Mono + VT323 fonts
+    globals.css            # OKLCH tokens, glass-surface class, font imports
+    dashboard/
+      page.tsx             # Tactical display (323 lines, client component)
+    api/
+      auth/
+        validate/          # POST: key → AES session token → cookie
+        session/           # GET: decrypt + validate session token
+      proxy/
+        shodan/            # GET: server-side Shodan API proxy
+      cctv/                # GET: CCTV camera list
+      codes/               # POST/GET: admin invite code management
+  components/
+    landing/
+      DecoyLanding.tsx     # Decoy page (388 lines): absurdist services + Konami trigger
+      CovertLogin.tsx      # Trigger wrapper component
+    auth/
+      HiddenAuth.tsx       # Auth modal (166 lines): key input, rate limit UX
+    map/
+      ShadowbrokerMap.tsx  # 53KB MapLibre map engine — all 22 layers rendered here
+    panels/
+      LayerPanel.tsx       # 182 lines: 22 layer toggles, categorized, searchable
+      SearchBar.tsx        # Geocoder / location search
+      VisualModeSelector.tsx # DEFAULT/SATELLITE/FLIR/NVG/CRT mode picker
+      KeyboardShortcuts.tsx  # Keyboard handler for layer + mode shortcuts
+      CctvViewer.tsx       # Embedded CCTV camera feed panel
+      DossierPanel.tsx     # Entity intelligence dossier (9880 bytes)
+    ui/
+      Toast.tsx            # Toast notifications + useToasts hook
+  lib/
+    auth.ts               # hashKey, validateKey, createSession, validateSession,
+                          # checkRateLimit, recordAttempt (157 lines)
+    rateLimit.ts          # checkServerRateLimit, recordServerAttempt (54 lines)
+                          # In-memory Map — resets on serverless cold start
+    inviteCodes.ts        # createCode, revokeCode, validateCode, listCodes (68 lines)
+    data/                 # 21 data fetcher modules:
+      aircraft.ts         # fetchMilitaryAircraft → adsb.lol/v2/mil
+      commercialFlights.ts # fetchCommercialFlights → adsb.lol bbox queries (8 regions)
+      vessels.ts          # fetchVessels → aisstream.io/api/v0/latest + 20-ship fallback
+      carriers.ts         # 20 hardcoded carrier strike group positions
+      cctv.ts             # 213 lines: CctvCamera interface + Digitraffic.fi cameras
+      cctvPipeline.ts     # 29KB: CCTV aggregation + health check pipeline
+      satellites.ts       # 24 notable satellites (TLE-derived static positions)
+      radios.ts           # KiwiSDR network nodes (21)
+      mesh.ts             # APRS mesh network nodes (26)
+      gpsJamming.ts       # GPS jamming zones (15 active)
+      earthquakes.ts      # USGS GeoJSON M2.5+ last 7 days
+      volcanoes.ts        # 60 active/notable volcanoes
+      fires.ts            # NASA FIRMS fire hotspots
+      weather.ts          # Severe weather alerts
+      airquality.ts       # OpenAQ v3 air quality sensors
+      eonet.ts            # NASA EONET earth events
+      conflicts.ts        # 15 conflict zones with status (static)
+      trains.ts           # 19 major rail routes (static GeoJSON-like)
+      shodan.ts           # Shodan Search API (via /api/proxy/shodan)
+      outages.ts          # Internet outage monitoring
+      infrastructure.ts   # 68KB static: 200+ bases, 500+ power plants, 30 data centers
+    utils/
+      fetchWithRetry.ts   # Retry + AbortController timeout wrapper
+      dataCache.ts        # localStorage TTL cache (prefix: sb_, default TTL: 5min)
+      useDataHealth.ts    # React hook for layer health status
+      useSmartToast.ts    # Context-aware toast hook
+  middleware.ts           # Next.js Edge middleware: /dashboard requires shadow_session cookie
+```
+
+## Authentication Architecture
+
+### Key Validation (src/lib/auth.ts:34)
+```typescript
+function constantTimeCompare(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let result = 0
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  }
+  return result === 0
+}
+```
+
+### Session Token (src/lib/auth.ts:48)
+Plaintext before AES encryption:
+```json
+{ "keyHash": "SHA256(key + SECRET_KEY)", "timestamp": 1716000000000, "expiry": 1716003600000 }
+```
+Stored as: `shadow_session=AES_ciphertext; HttpOnly; SameSite=Strict; Path=/`
+
+### Rate Limiting
+- Client-side: localStorage timestamps, 5 attempts / 15-min window
+- Server-side: In-memory Map keyed by X-Forwarded-For IP, same policy
+
+## Data Layer Pattern
+
+Every data module (21 total) uses this exact three-tier pattern:
+1. `fetchWithRetry(URL, {retries: 2, timeout: 8000})`
+2. Transform response to local TypeScript interface
+3. `setCache(KEY, result)` → on error: `getCache(KEY) || STATIC_FALLBACK`
+
+### External APIs Used
+
+| API | URL | Key Required | Layer |
+|-----|-----|-------------|-------|
+| adsb.lol | api.adsb.lol/v2/mil | No | Military aircraft |
+| adsb.lol | api.adsb.lol/v2/lat/.../dist/500 | No | Commercial flights |
+| aisstream.io | aisstream.io/api/v0/latest | Yes (NEXT_PUBLIC_AISTREAM_API_KEY) | Vessels |
+| USGS | earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_week.geojson | No | Earthquakes |
+| NASA EONET | eonetapi.nasa.gov/v3/events | No | Earth events |
+| Digitraffic.fi | weathercam.digitraffic.fi/*.jpg | No | CCTV cameras |
+| OpenAQ | api.openaq.org/v3/locations | Optional | Air quality |
+| Shodan | /api/proxy/shodan (server proxy) | Yes (SHODAN_API_KEY, server-only) | Devices |
+
+## Intelligence Layer Catalog
+
+22 layers in 8 categories:
+
+Surveillance: cctv (900+ cameras, on by default)
+Aviation: flights_military (on by default), flights_commercial
+Maritime: ships, carriers
+Ground: trains
+Space: satellites
+SIGINT: radios, mesh, gps_jamming
+Environment: earthquakes (on), volcanoes (on), fires, weather, air_quality
+Infrastructure: infrastructure_bases, infrastructure_power, infrastructure_datacenters, outages
+Geopolitics: conflict
+Overlays: daynight (on), shodan
+
+Layer configuration in src/components/panels/LayerPanel.tsx:38
+
+## Dashboard State
+
+React useState only (no external state library):
+- activeLayers: Record<string, boolean> — which layers are on
+- visualMode: 'DEFAULT' | 'SATELLITE' | 'FLIR' | 'NVG' | 'CRT'
+- health: HealthMap — per-layer { status: 'online' | 'degraded' | 'offline' }
+- stats: LayerStats — per-layer entity count
+- activeCamera: CctvCamera | null — currently focused CCTV
+- refreshKey: number — incremented to force data reload
+
+URL state sync (debounced 300ms): ?layers=cctv,satellites&mode=FLIR
+
+## Design System
+
+OKLCH color system:
+- --aig-void-deep: oklch(0.10 0.015 250) — page background
+- --aig-void-base: oklch(0.13 0.015 250) — panels
+- --aig-void-raised: oklch(0.17 0.015 250) — controls
+- --aig-void-glass: oklch(0.20 0.020 250) — glass surfaces
+- --aig-accent-warm: oklch(0.75 0.150 65) — amber highlights
+- --aig-accent-warm-dim: oklch(0.55 0.100 65) — dimmed amber
+
+Typography: JetBrains Mono (primary), VT323 (display/TTY), Share Tech Mono (fallback)
+Constraints: 0px border-radius on all instrument surfaces, no drop shadows, Bayer matrix dither
+
+## Environment Variables
+
+Required:
+- SECRET_KEY: master authentication key
+- ENCRYPTION_KEY: 32-char AES session encryption key
+
+Optional:
+- BACKEND_URL: external Shadowbroker backend
+- SESSION_DURATION: default 3600000 (1 hour)
+- RATE_LIMIT_MAX: default 5
+- RATE_LIMIT_WINDOW: default 900000 (15 minutes)
+- NEXT_PUBLIC_AISTREAM_API_KEY: live AIS vessel data
+- SHODAN_API_KEY: server-only, never NEXT_PUBLIC_
+
+## Security Headers (next.config.js:18)
+
+HSTS max-age=63072000 includeSubDomains preload
+X-Frame-Options: SAMEORIGIN
+X-Content-Type-Options: nosniff
+X-XSS-Protection: 1; mode=block
+Referrer-Policy: strict-origin-when-cross-origin
+CSP: default-src 'self', scripts self+unsafe-eval+googleapis, no external frames
+
+## Known Failure Modes
+
+1. SECRET_KEY leaked → rotate + redeploy immediately
+2. Server-side rate limiter resets on serverless cold start → use Redis for production
+3. Sessions only validated on mount, not mid-session → stale sessions remain until page refresh
+4. localStorage cache grows unbounded → no pruning of old keys
+5. adsb.lol rate limited → military/commercial aircraft empty (no fallback)
+
+## Decoy Landing Triggers
+
+DecoyLanding.tsx implements three hidden access methods:
+1. Konami code (↑↑↓↓←→←→BA) — window.addEventListener('keydown')
+2. Copyright/footer click 5× within 3 seconds — click counter with timeout reset
+3. Direct navigation to /login or /api/auth/* routes
+
+## Wiki
+
+wiki/ directory contains VitePress documentation:
+- wiki/01-getting-started/overview.md
+- wiki/01-getting-started/setup.md
+- wiki/01-getting-started/quick-reference.md
+- wiki/02-deep-dive/architecture/index.md
+- wiki/02-deep-dive/data-layer/index.md
+- wiki/02-deep-dive/business-logic/index.md
+- wiki/02-deep-dive/integrations/index.md
+- wiki/02-deep-dive/frontend/index.md
+- onboarding/contributor.md
+- onboarding/staff-engineer.md
+- onboarding/executive.md
+- onboarding/product-manager.md
+- wiki/.vitepress/config.ts (VitePress config with dark theme + Mermaid)
