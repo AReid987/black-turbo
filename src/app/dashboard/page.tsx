@@ -154,11 +154,13 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-black flex flex-col overflow-hidden glass-surface">
       {/* Top bar */}
       <div className="bg-black border-b border-green-500/30 px-4 py-2 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-3">
+            <span className="text-green-400 font-display text-base tracking-widest font-bold">BLACKTIVISM</span>
+            <span className="text-gray-600 text-[10px] font-mono">|</span>
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
             <span className="text-green-500 text-xs font-mono tracking-wider">SECURE CONNECTION</span>
           </div>
@@ -310,7 +312,7 @@ export default function DashboardPage() {
               )}
             </div>
             <span className="text-[10px] font-mono text-gray-600 whitespace-nowrap ml-2">
-              SHADOWBROKER v0.4
+              BLACKTIVISM v0.4
             </span>
           </div>
         </div>

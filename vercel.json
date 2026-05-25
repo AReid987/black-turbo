@@ -3,8 +3,15 @@
   "outputDirectory": ".next",
   "framework": "nextjs",
   "regions": ["iad1"],
-
-  "env": {},
+  "functions": {
+    "api/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "SECRET_KEY": "@secret_key",
+    "ENCRYPTION_KEY": "@encryption_key"
+  },
   "headers": [
     {
       "source": "/(.*)",

@@ -9,6 +9,67 @@
   --font-body: var(--font-body);
   --font-mono: var(--font-mono);
 
+  /* Aigency Design System - Color System (OKLCH) */
+  --aig-void-deep:       oklch(0.10  0.015 250);
+  --aig-void-base:       oklch(0.13  0.015 250);
+  --aig-void-raised:     oklch(0.17  0.015 250);
+  --aig-void-glass:      oklch(0.20  0.020 250);
+
+  --aig-text-primary:    oklch(0.90  0.010 250);
+  --aig-text-body:       oklch(0.78  0.010 250);
+  --aig-text-secondary:  oklch(0.60  0.010 250);
+  --aig-text-tertiary:   oklch(0.45  0.010 250);
+
+  --aig-grid-line:       oklch(0.90  0.010 250);
+  --aig-grid-dim:        oklch(0.50  0.010 250);
+  --aig-grid-faint:      oklch(0.30  0.010 250);
+
+  --aig-accent-warm:     oklch(0.75  0.150  65);
+  --aig-accent-warm-dim: oklch(0.55  0.100  65);
+  --aig-accent-warm-glow: oklch(0.75 0.150 65 / 0.3);
+
+  --aig-signal-go:       oklch(0.72  0.170 160);
+  --aig-signal-conditional: oklch(0.75 0.150 65);
+  --aig-signal-avoid:    oklch(0.60  0.200  25);
+  --aig-signal-critical: oklch(0.55  0.220  25);
+  --aig-signal-highlight: oklch(0.65 0.170 300);
+
+  --station-frame: oklch(0.22 0.010 250);
+  --station-frame-highlight: oklch(0.35 0.015 250);
+  --station-glow: oklch(0.75 0.150 65 / 0.08);
+  --glass-reflection: oklch(0.90 0.010 250 / 0.03);
+  --graph-paper: oklch(0.90 0.010 250 / 0.035);
+  --graph-paper-bold: oklch(0.90 0.010 250 / 0.08);
+  --window-edge-glow: oklch(0.65 0.100 180 / 0.06);
+
+  --aig-dither-cell-size: 16px;
+  --aig-dither-opacity: 1;
+
+  --aig-duration-instant:  0.1s;
+  --aig-duration-fast:     0.15s;
+  --aig-duration-normal:   0.3s;
+  --aig-duration-slow:     0.6s;
+  --aig-duration-slower:   1.2s;
+  --aig-duration-data:     2s;
+  --aig-duration-particle: 0.016s;
+
+  --aig-ease-out-expo:     cubic-bezier(0.16, 1, 0.3, 1);
+  --aig-ease-in-expo:      cubic-bezier(0.7, 0, 0.84, 0);
+  --aig-ease-in-out-expo:  cubic-bezier(0.65, 0, 0.35, 1);
+  --aig-ease-sharp:        cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --aig-ease-line-draw:    cubic-bezier(0.4, 0, 0.2, 1);
+
+  --aig-border-subtle:  0 0 0 1px oklch(0.90 0.010 250 / 0.06);
+  --aig-border-medium:  0 0 0 1px oklch(0.90 0.010 250 / 0.12);
+  --aig-border-strong:  0 0 0 1px oklch(0.90 0.010 250 / 0.20);
+
+  --z-canvas:     0;
+  --z-glass:      1;
+  --z-content:    10;
+  --z-ambient:    20;
+  --z-nav:        100;
+  --z-overlay:    200;
+
   /* Colors - OKLCH for perceptual uniformity */
   --color-primary-50: oklch(0.95 0.03 155);
   --color-primary-100: oklch(0.92 0.04 155);
@@ -335,42 +396,131 @@ html {
   outline: none;
 }
 
-/* === MAPLIBRE CUSTOM STYLES === */
+/* ═══════════════════════════════════════════
+   AIGENCY DESIGN SYSTEM UTILITIES
+   ═══════════════════════════════════════════ */
+
+/* Station Glass Utilities */
+.glass-surface {
+  position: relative;
+  background: var(--aig-void-deep);
+}
+
+.glass-surface::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--z-glass);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpath d='M0 0h1v1H0zm2 0h1v1H2zm1 1h1v1H3zm-1 1h1v1H2zm-2 0h1v1H0zm1 1h1v1H1z' fill='%23d4dde8' fill-opacity='0.04'/%3E%3C/svg%3E");
+  background-size: var(--aig-dither-cell-size) var(--aig-dither-cell-size);
+  image-rendering: pixelated;
+  opacity: var(--aig-dither-opacity);
+}
+
+.hud-accent {
+  position: relative;
+}
+
+.hud-accent::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  border-top: 1px solid var(--aig-accent-warm);
+  border-left: 1px solid var(--aig-accent-warm);
+}
+
+.hud-accent::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 8px;
+  height: 8px;
+  border-bottom: 1px solid var(--aig-accent-warm);
+  border-right: 1px solid var(--aig-accent-warm);
+}
+
+/* MapLibre popup and map styling mapped to Station Glass */
 .maplibregl-map {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-family: var(--font-mono), monospace !important;
 }
 
 .maplibregl-popup-content {
-  background: #000 !important;
-  border: 1px solid #22c55e !important;
-  border-radius: 4px !important;
+  background: var(--aig-void-deep) !important;
+  border: 1px solid var(--aig-accent-warm) !important;
+  border-radius: 0px !important; /* Sharp corners */
   padding: 0 !important;
-  color: #22c55e;
+  color: var(--aig-text-primary);
+  position: relative;
+}
+
+.maplibregl-popup-content::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--z-glass);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Cpath d='M0 0h1v1H0zm2 0h1v1H2zm1 1h1v1H3zm-1 1h1v1H2zm-2 0h1v1H0zm1 1h1v1H1z' fill='%23d4dde8' fill-opacity='0.04'/%3E%3C/svg%3E");
+  background-size: var(--aig-dither-cell-size) var(--aig-dither-cell-size);
+  image-rendering: pixelated;
+  opacity: var(--aig-dither-opacity);
 }
 
 .maplibregl-popup-tip {
-  border-top-color: #22c55e !important;
+  border-top-color: var(--aig-accent-warm) !important;
 }
 
-/* Custom scrollbar for dark theme */
-.dark-scrollbar::-webkit-scrollbar {
-  width: 6px;
+/* Animations */
+@keyframes dataBreath {
+  0%, 100% { opacity: 1; filter: drop-shadow(0 0 2px var(--aig-accent-warm)); }
+  50% { opacity: 0.7; filter: drop-shadow(0 0 8px var(--aig-accent-warm)); }
 }
 
-.dark-scrollbar::-webkit-scrollbar-track {
-  background: #000;
+.data-breath {
+  animation: dataBreath var(--aig-duration-slower) var(--aig-ease-in-out-expo) infinite;
 }
 
-.dark-scrollbar::-webkit-scrollbar-thumb {
-  background: #1f2937;
-  border-radius: 3px;
+@keyframes progressFill {
+  from { width: 0%; }
 }
 
-.dark-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: #374151;
+.progress-fill {
+  animation: progressFill var(--aig-duration-data) var(--aig-ease-out-expo) forwards;
 }
 
-/* CCTV marker hover */
-.cctv-marker:hover div {
-  transform: scale(1.4);
+.reveal {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity var(--aig-duration-slow) var(--aig-ease-out-expo),
+    transform var(--aig-duration-slow) var(--aig-ease-out-expo);
+}
+
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 3D Perspective Reveals */
+.perspective-container {
+  perspective: var(--aig-perspective);
+}
+
+.aig-reveal {
+  opacity: 0;
+  transform: var(--aig-tilt-initial) translateY(40px);
+  transition:
+    opacity var(--aig-reveal-duration) var(--aig-ease-out-expo),
+    transform var(--aig-reveal-duration) var(--aig-ease-out-expo);
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+}
+
+.aig-reveal.visible {
+  opacity: 1;
+  transform: var(--aig-tilt-final) translateY(0);
 }

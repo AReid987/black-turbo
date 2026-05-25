@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import maplibregl from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { getAllCameras, cctvCameras, type CctvCamera } from '@/lib/data/cctv';
+import { cctvCameras, type CctvCamera } from '@/lib/data/cctv';
 import { fetchEarthquakes, getMagnitudeColor, getMagnitudeSize, type EarthquakeFeature } from '@/lib/data/earthquakes';
 import { fetchMilitaryAircraft, type Aircraft } from '@/lib/data/aircraft';
 import { fetchAirQuality, getAqiColor, getAqiLabel, type AirQualityStation } from '@/lib/data/airquality';
@@ -165,6 +165,8 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
   const [aircraft, setAircraft] = useState<Aircraft[]>([]);
   const [airQuality, setAirQuality] = useState<AirQualityStation[]>([]);
   const [cctvList, setCctvList] = useState<CctvCamera[]>(cctvCameras);
+  const [cctvTotalCount, setCctvTotalCount] = useState(0);
+  const [cctvVisibleCount, setCctvVisibleCount] = useState(0);
   const [shodanHosts, setShodanHosts] = useState<ShodanHost[]>([]);
   const [vessels, setVessels] = useState<Vessel[]>([]);
   const [weatherAlerts, setWeatherAlerts] = useState<WeatherAlert[]>([]);
@@ -205,7 +207,7 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
       airQuality: airQuality.length,
       weatherAlerts: weatherAlerts.length,
       fireHotspots: fireHotspots.length,
-      cctv: cctvList.length,
+      cctv: cctvTotalCount || cctvList.length,
       shodan: shodanHosts.length,
     });
   }, [earthquakes, aircraft, vessels, commercialFlights, airQuality, weatherAlerts, fireHotspots, cctvList, shodanHosts, onStatsChange]);
@@ -376,15 +378,20 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     return () => clearInterval(interval);
   }, [activeLayers, updateHealth, refreshSignal]);
 
-  // Fetch CCTV cameras dynamically
+  // Fetch CCTV cameras dynamically via backend API
   useEffect(() => {
     if (!activeLayers['cctv']) return;
     const load = async () => {
       try {
-        const data = await getAllCameras();
-        setCctvList(data);
+        const res = await fetch('/api/cctv?limit=20000', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`CCTV API ${res.status}`);
+        const json = await res.json();
+        setCctvList(json.cameras || []);
+        setCctvTotalCount(json.allCount || json.cameras?.length || 0);
         updateHealth('cctv', true);
       } catch {
+        // Fallback to static list if API fails
+        setCctvList(cctvCameras);
         updateHealth('cctv', false);
       }
     };
@@ -500,12 +507,19 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
     const zoom = map.current.getZoom();
     const isZoomedOut = zoom < 9;
 
+    // Spatial grid filter when zoomed out: show at most 1 camera per cell
+    // to ensure global coverage instead of clustering in one region
+    const seenCells = new Set<string>();
+    const cellSize = 8; // degrees — roughly 1 camera per 8°x8° cell when zoomed out
+    let visible = 0;
+
     cctvList.forEach((cam) => {
-      // When zoomed out, only show a subset of cameras (spaced out)
       if (isZoomedOut) {
-        // Simple spatial filter: only show every 20th camera to avoid clutter
-        const hash = cam.id.split('').reduce((a, b) => a + b.charCodeAt(0), 0);
-        if (hash % 20 !== 0) return;
+        const cellLat = Math.floor(cam.lat / cellSize);
+        const cellLng = Math.floor(cam.lng / cellSize);
+        const cellKey = `${cellLat},${cellLng}`;
+        if (seenCells.has(cellKey)) return;
+        seenCells.add(cellKey);
       }
 
       const el = document.createElement('div');
@@ -527,7 +541,10 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
       el.addEventListener('mouseleave', () => popup.remove());
 
       cctvMarkersRef.current.push(marker);
+      visible++;
     });
+
+    setCctvVisibleCount(visible);
   }, [activeLayers, cctvList, onCameraSelect]);
 
   const updateEqMarkers = useCallback(() => {
@@ -1023,6 +1040,15 @@ export default function ShadowbrokerMap({ activeLayers, visualMode, onCameraSele
 
       {dossierPos && (
         <DossierPanel lat={dossierPos.lat} lng={dossierPos.lng} onClose={() => setDossierPos(null)} />
+      )}
+
+      {/* CCTV sampling indicator */}
+      {mapLoaded && activeLayers['cctv'] && cctvVisibleCount > 0 && cctvVisibleCount < cctvList.length && (
+        <div className="absolute top-16 left-4 z-20 bg-black/80 border border-green-500/30 rounded px-2 py-1">
+          <span className="text-[10px] font-mono text-green-500/80">
+            CCTV: {cctvVisibleCount} of {cctvTotalCount || cctvList.length} visible — zoom in for full mesh
+          </span>
+        </div>
       )}
 
       {/* Mouse coordinate tracker */}

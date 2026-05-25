@@ -20,6 +20,16 @@ export async function validateKey(key: string): Promise<boolean> {
   }
 }
 
+// Verify admin token (e.g. bearer tokens for administrative APIs)
+export function verifyAdminToken(token: string): boolean {
+  try {
+    if (!token) return false
+    return constantTimeCompare(token, SECRET_KEY)
+  } catch (error) {
+    return false
+  }
+}
+
 // Constant-time comparison to prevent timing attacks
 function constantTimeCompare(a: string, b: string): boolean {
   if (a.length !== b.length) {

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Playfair_Display, Source_Sans_3, JetBrains_Mono } from 'next/font/google'
+import { Playfair_Display, Source_Sans_3, JetBrains_Mono, VT323, Share_Tech_Mono } from 'next/font/google'
 import './globals.css'
 
 // Font optimization with display swap strategy
@@ -25,6 +25,20 @@ const jetBrainsMono = JetBrains_Mono({
   variable: '--font-mono',
   weight: ['400', '500'],
   preload: false, // Lazy load monospace
+})
+
+const vt323 = VT323({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-vt323',
+  weight: '400',
+})
+
+const shareTechMono = Share_Tech_Mono({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-share-tech',
+  weight: '400',
 })
 
 export const metadata: Metadata = {
@@ -75,7 +89,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${playfairDisplay.variable} ${sourceSans.variable}`}>
+    <html lang="en" className={`${playfairDisplay.variable} ${sourceSans.variable} ${jetBrainsMono.variable} ${vt323.variable} ${shareTechMono.variable}`}>
       <body className="antialiased">
         {/* Skip link for accessibility */}
         <a

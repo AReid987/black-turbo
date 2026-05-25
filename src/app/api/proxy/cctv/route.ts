@@ -1,40 +1,80 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 
-export const dynamic = 'force-dynamic';
+const ALLOWED_HOSTS = new Set([
+  // Finland
+  "weathercam.digitraffic.fi",
+  // Windy
+  "images-webcams.windy.com",
+  // TFL
+  "s3-eu-west-1.amazonaws.com",
+  // Austin TX
+  "cctv.austinmobility.io",
+  // NYC DOT
+  "webcams.nyctmc.org",
+  // Caltrans / California DOT
+  "cwwp2.dot.ca.gov",
+  "cwwp2.dot.ca.gov:80",
+  // WSDOT
+  "images.wsdot.wa.gov",
+  "www.wsdot.wa.gov",
+  // Georgia DOT
+  "navigator-c2c.dot.ga.gov",
+  "navigatos-c2c.dot.ga.gov",
+  // Illinois DOT
+  "www.travelmidwest.com",
+  "travelmidwest.com",
+  // Michigan DOT
+  "mdotjboss.state.mi.us",
+  // DGT Spain
+  "infocar.dgt.es",
+  // Madrid
+  "datos.madrid.es",
+  "www.madrid.es",
+  // Colorado DOT
+  "cotg.carsprogram.org",
+  // Singapore
+  "datamall2.mytransport.sg",
+  "datamall.mytransport.sg",
+]);
 
-export async function GET(request: NextRequest) {
-  const url = request.nextUrl.searchParams.get('url');
-  
-  if (!url) {
-    return NextResponse.json({ error: 'Missing url parameter' }, { status: 400 });
+const ALLOWED_PATH_PATTERNS = [
+  // TFL S3 pattern
+  /^\/jamcams\.tfl\.gov\.uk\//,
+];
+
+function isAllowed(urlStr: string): boolean {
+  try {
+    const url = new URL(urlStr);
+    const host = url.hostname.toLowerCase();
+    if (ALLOWED_HOSTS.has(host)) return true;
+    for (const pattern of ALLOWED_PATH_PATTERNS) {
+      if (pattern.test(url.pathname)) return true;
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const targetUrl = searchParams.get("url");
+
+  if (!targetUrl) {
+    return NextResponse.json({ error: "Missing url parameter" }, { status: 400 });
+  }
+
+  if (!isAllowed(targetUrl)) {
+    return NextResponse.json({ error: "Domain not allowed" }, { status: 403 });
   }
 
   try {
-    const urlObj = new URL(url);
-    const hostname = urlObj.hostname;
-    const pathname = urlObj.pathname;
-
-    // Security: only allow known camera domains
-    // For S3, we check the path contains the expected bucket prefix
-    const isAllowed = (
-      hostname === 'weathercam.digitraffic.fi' ||
-      (hostname === 's3-eu-west-1.amazonaws.com' && pathname.includes('/jamcams.tfl.gov.uk/'))
-    );
-
-    if (!isAllowed) {
-      return NextResponse.json({ error: 'Domain not allowed' }, { status: 403 });
-    }
-
-    // Append cache-busting timestamp to upstream URL
-    const upstreamUrl = new URL(url);
-    upstreamUrl.searchParams.set('_t', Date.now().toString());
-
-    const response = await fetch(upstreamUrl.toString(), {
+    const response = await fetch(targetUrl, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+        "User-Agent": "Mozilla/5.0 (compatible; Shadowbroker/1.0)",
+        Accept: "image/*,video/*,*/*",
       },
-      cache: 'no-store',
+      signal: AbortSignal.timeout(30000),
     });
 
     if (!response.ok) {
@@ -44,19 +84,22 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const contentType = response.headers.get('content-type') || 'image/jpeg';
-    const buffer = await response.arrayBuffer();
+    const contentType =
+      response.headers.get("content-type") || "application/octet-stream";
+    const body = await response.arrayBuffer();
 
-    return new NextResponse(buffer, {
+    return new NextResponse(body, {
+      status: 200,
       headers: {
-        'Content-Type': contentType,
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Access-Control-Allow-Origin': '*',
+        "Content-Type": contentType,
+        "Cache-Control": "public, max-age=60",
+        "Access-Control-Allow-Origin": "*",
       },
     });
-  } catch (error) {
-    console.error('Proxy error:', error);
-    return NextResponse.json({ error: 'Proxy failed' }, { status: 500 });
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: err?.message || "Proxy failed" },
+      { status: 502 }
+    );
   }
 }

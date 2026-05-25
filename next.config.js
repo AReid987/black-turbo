@@ -50,17 +50,7 @@ const nextConfig = {
           },
           {
             key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob: https: http:",
-              "connect-src 'self' https: http: wss: ws:",
-              "font-src 'self' data:",
-              "frame-src 'self' https: http:",
-              "worker-src 'self' blob:",
-              "child-src 'self' blob:",
-            ].join('; ')
+            value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline' https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https: https://fonts.gstatic.com; connect-src 'self' https: https://fonts.googleapis.com; frame-ancestors 'none';"
           }
         ]
       }
@@ -74,6 +64,7 @@ const nextConfig = {
 
   // Webpack configuration for font optimization
   webpack: (config, { isServer }) => {
+    // Optimize font loading
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,

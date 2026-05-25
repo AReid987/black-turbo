@@ -52,26 +52,17 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
-.gitnexus
 
-# ── GSD baseline (auto-generated) ──
+# Agent/Local Tooling Metadata
+.gsd
 .gsd-id
-.mcp.json
-.bg-shell/
-*.code-workspace
-.env.*
-!.env.example
-node_modules/
-.next/
-dist/
-build/
-__pycache__/
-*.pyc
-.venv/
-venv/
-target/
-vendor/
-coverage/
-.cache/
-.gsd/
-.claude-flow/
+.claude
+.claude-flow
+.canopy
+.swarm
+.sugar
+.mulch
+.overstory
+.seeds
+.bg-shell
+.gitnexus
