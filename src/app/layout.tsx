@@ -22,9 +22,9 @@ const sourceSans = Source_Sans_3({
 const jetBrainsMono = JetBrains_Mono({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-mono',
-  weight: ['400', '500'],
-  preload: false, // Lazy load monospace
+  variable: '--font-jetbrains',
+  weight: ['400', '500', '700'],
+  preload: true, // Primary font for the Aigency DS
 })
 
 const vt323 = VT323({

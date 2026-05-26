@@ -12,8 +12,22 @@ interface CodeMeta {
   uses: number;
 }
 
-const _validCodes = new Set<string>();
-const _codeMetadata = new Map<string, CodeMeta>();
+// Persist the in-memory collections on globalThis to share state across
+// separately bundled Next.js route handlers and prevent hot-reloading resets.
+const globalWithCodes = globalThis as typeof globalThis & {
+  _validCodes?: Set<string>;
+  _codeMetadata?: Map<string, CodeMeta>;
+};
+
+if (!globalWithCodes._validCodes) {
+  globalWithCodes._validCodes = new Set<string>();
+}
+if (!globalWithCodes._codeMetadata) {
+  globalWithCodes._codeMetadata = new Map<string, CodeMeta>();
+}
+
+const _validCodes = globalWithCodes._validCodes;
+const _codeMetadata = globalWithCodes._codeMetadata;
 
 function generateCode(length: number = 12): string {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';

@@ -4,31 +4,3 @@
 {"id":"1eafe891-ac82-455b-af3a-c042f27bdb8f","ts":"2026-04-25T06:07:27.484Z","severity":"success","message":"Key saved for MiniMax: sk-c***YoU4","source":"notify","read":false}
 {"id":"8ae40f0d-ef1b-49f5-b2eb-2973e8fad4a3","ts":"2026-04-25T06:07:27.932Z","severity":"info","message":"MCP client ready — 1 server(s) configured","source":"notify","read":false}
 {"id":"6063a996-55be-4e47-86ea-35d2f7efff89","ts":"2026-04-25T06:07:27.935Z","severity":"warning","message":"Context7: No CONTEXT7_API_KEY set. Using free tier (1000 req/month limit). Set CONTEXT7_API_KEY for higher limits.","source":"notify","read":false}
-{"id":"04040f92-d001-4a4e-b7e7-9a65b010cc4c","ts":"2026-04-27T04:02:29.160Z","severity":"warning","message":"[engine] mkdir failed: Command failed: git commit --no-verify -F -\nLiveReview: review attestation missing for staged changes. Run 'lrc review --staged' (or --skip/--vouch) and retry commit.\n","source":"workflow-logger","read":false}
-{"id":"d4b517c5-0bc8-4863-b619-bcfc0f4417fe","ts":"2026-04-27T04:02:29.432Z","severity":"info","message":"Analyzing codebase...","source":"notify","read":false}
-{"id":"2fda18df-038b-42d2-b3f0-2b6f699acf48","ts":"2026-04-27T04:02:29.446Z","severity":"success","message":"✓ Analyzed codebase","source":"notify","read":false}
-{"id":"c25c5c3d-f620-48f5-be7e-e53d2e59ab69","ts":"2026-04-27T04:02:29.446Z","severity":"info","message":"Reviewing prior context...","source":"notify","read":false}
-{"id":"7940fffe-5ee3-44d7-8b73-6e1a449c3345","ts":"2026-04-27T04:02:29.449Z","severity":"success","message":"✓ Reviewed prior context","source":"notify","read":false}
-{"id":"538d99c5-0de5-425d-80db-fb17427b36f4","ts":"2026-04-27T04:03:03.978Z","severity":"info","message":"Analyzing codebase...","source":"notify","read":false}
-{"id":"f4cf5081-bb00-45e9-9c44-668920ccab52","ts":"2026-04-27T04:03:03.988Z","severity":"success","message":"✓ Analyzed codebase","source":"notify","read":false}
-{"id":"97c93a64-ef53-4860-b33d-34b5c5a49c27","ts":"2026-04-27T04:03:03.988Z","severity":"info","message":"Reviewing prior context...","source":"notify","read":false}
-{"id":"43ed7d9a-a5ec-4569-ab62-e7add1093f35","ts":"2026-04-27T04:03:03.989Z","severity":"success","message":"✓ Reviewed prior context","source":"notify","read":false}
-{"id":"f01d2625-d318-4159-b520-3574dae4f201","ts":"2026-04-27T04:03:35.358Z","severity":"warning","message":"All milestones are complete and the discussion didn't produce a new one. Run /gsd to start a new milestone manually.","source":"notify","read":false}
-{"id":"73410d97-704d-4ee6-99f2-ca405da56db4","ts":"2026-04-27T04:03:41.502Z","severity":"info","message":"Analyzing codebase...","source":"notify","read":false}
-{"id":"c196db0e-049b-45ad-88d5-fcc66f262015","ts":"2026-04-27T04:03:41.511Z","severity":"success","message":"✓ Analyzed codebase","source":"notify","read":false}
-{"id":"00b68d74-e2c9-49e9-b81e-2b0694cbef8d","ts":"2026-04-27T04:03:41.511Z","severity":"info","message":"Reviewing prior context...","source":"notify","read":false}
-{"id":"bc9c09b1-be21-4b2e-b318-38df7a065ee1","ts":"2026-04-27T04:03:41.512Z","severity":"success","message":"✓ Reviewed prior context","source":"notify","read":false}
-{"id":"a0a57926-0dfc-436e-b32f-58c2fec5b4c6","ts":"2026-04-27T04:10:33.050Z","severity":"info","message":"MCP client ready — 1 server(s) configured","source":"notify","read":false}
-{"id":"fe6db6ca-e44f-4105-9d11-b1f6a1f02645","ts":"2026-04-27T04:11:14.228Z","severity":"info","message":"MCP client ready — 1 server(s) configured","source":"notify","read":false}
-{"id":"fbf89a4a-c360-4f3a-86dc-49083224972e","ts":"2026-04-27T04:12:18.774Z","severity":"info","message":"MCP client ready — 1 server(s) configured","source":"notify","read":false}
-{"id":"83072f63-cd98-4a5d-95ef-0f001f98132d","ts":"2026-04-27T04:12:52.582Z","severity":"info","message":"MCP client ready — 1 server(s) configured","source":"notify","read":false}
-{"id":"288305bc-1289-4ad4-84b8-ec96119a2c5b","ts":"2026-04-27T04:13:09.969Z","severity":"info","message":"MCP client ready — 1 server(s) configured","source":"notify","read":false}
-{"id":"654c986a-eaa2-4556-b2b0-1c23e0659165","ts":"2026-04-27T04:56:26.931Z","severity":"info","message":"MCP client ready — 1 server(s) configured","source":"notify","read":false}
-{"id":"0cf371b3-c40d-4513-859f-2ca5478b2068","ts":"2026-04-27T04:58:46.923Z","severity":"info","message":"MCP client ready — 1 server(s) configured","source":"notify","read":false}
-{"id":"1f1d128d-62cd-469a-b5f6-d551c2a462c9","ts":"2026-04-27T05:00:24.307Z","severity":"info","message":"MCP client ready — 1 server(s) configured","source":"notify","read":false}
-{"id":"6332dfe5-abc5-4136-a86c-c77cc347188d","ts":"2026-04-27T05:01:01.969Z","severity":"info","message":"MCP client ready — 1 server(s) configured","source":"notify","read":false}
-{"id":"a4407bae-39d1-4f3d-82b5-6d7d465433bc","ts":"2026-04-27T05:01:38.811Z","severity":"info","message":"MCP client ready — 1 server(s) configured","source":"notify","read":false}
-{"id":"7b4cd1f6-4cc0-4b2c-9c2c-014ecd5a7b9f","ts":"2026-04-27T05:01:55.092Z","severity":"info","message":"MCP client ready — 1 server(s) configured","source":"notify","read":false}
-{"id":"443815f2-344d-49f6-92aa-cc024039743e","ts":"2026-04-27T05:02:22.355Z","severity":"info","message":"MCP client ready — 1 server(s) configured","source":"notify","read":false}
-{"id":"9c6da7b8-9182-4a63-8cd5-438aba490b5b","ts":"2026-04-27T05:02:51.794Z","severity":"info","message":"MCP client ready — 1 server(s) configured","source":"notify","read":false}
-{"id":"dd2971f3-c63a-48be-971e-b91e05f2e95d","ts":"2026-04-27T05:03:08.975Z","severity":"info","message":"MCP client ready — 1 server(s) configured","source":"notify","read":false}

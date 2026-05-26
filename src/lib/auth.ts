@@ -1,4 +1,5 @@
 import CryptoJS from 'crypto-js'
+import { validateCode } from './inviteCodes'
 
 // Prefer non-prefixed env vars (server-only) since validation now happens in API routes.
 // Fallback to NEXT_PUBLIC_ variants for backward compatibility.
@@ -13,7 +14,10 @@ export function hashKey(key: string): string {
 // Validate a key against the stored secret
 export async function validateKey(key: string): Promise<boolean> {
   try {
-    return constantTimeCompare(key, SECRET_KEY)
+    if (constantTimeCompare(key, SECRET_KEY)) {
+      return true
+    }
+    return validateCode(key)
   } catch (error) {
     console.error('Key validation error:', error)
     return false
